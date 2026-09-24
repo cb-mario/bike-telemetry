@@ -1,8 +1,14 @@
 const PlannedRoute = require('../models/plannedRoute.model');
+const activityService = require('./activity.service');
 const { HttpError } = require('../middlewares/errorHandler');
-const { haversine, segmentElevationGain, simplifyCoords, round } = require('./track.service');
+const { parseGpx } = require('./gpx.service');
+const { haversine, segmentElevationGain, simplifyCoords, downsample, round } = require('./track.service');
 
 const PREVIEW_POINTS = 80;
+const MAX_IMPORTED_POINTS = 5000;
+// Puntos de paso generados al importar: uno cada WAYPOINT_STEP_KM, para poder editar la ruta
+const WAYPOINT_STEP_KM = 5;
+const MAX_WAYPOINTS = 200;
 
 // Distancia y desnivel calculados en el servidor a partir del trazado
 function computeMetrics(geometry) {
@@ -63,6 +69,61 @@ async function update(id, userId, input) {
   return toDetail(await PlannedRoute.update(id, toData(input)));
 }
 
+// --- Importación: GPX externo o salida ya hecha -------------------------------------
+
+// Puntos de paso cada WAYPOINT_STEP_KM a lo largo del trazado (incluye inicio y final)
+function waypointsFrom(geometry) {
+  const totalKm = computeMetrics(geometry).distanceKm;
+  const step = Math.max(WAYPOINT_STEP_KM, totalKm / (MAX_WAYPOINTS - 1));
+  const waypoints = [[geometry[0][0], geometry[0][1]]];
+  let km = 0;
+  let nextMark = step;
+  for (let i = 1; i < geometry.length; i++) {
+    km += haversine({ lat: geometry[i - 1][0], lon: geometry[i - 1][1] }, { lat: geometry[i][0], lon: geometry[i][1] }) / 1000;
+    if (km >= nextMark && i < geometry.length - 1) {
+      waypoints.push([geometry[i][0], geometry[i][1]]);
+      nextMark += step;
+    }
+  }
+  const last = geometry.at(-1);
+  waypoints.push([last[0], last[1]]);
+  return waypoints;
+}
+
+// Segmentos de puntos → trazado único [[lat, lon, ele|null]] de como mucho MAX_IMPORTED_POINTS
+function toGeometry(segments) {
+  const points = downsample([segments.flat()], MAX_IMPORTED_POINTS)[0];
+  return points.map((p) => [round(p.lat, 6), round(p.lon, 6), p.ele != null ? round(p.ele, 1) : null]);
+}
+
+function createFromGeometry(userId, name, geometry) {
+  if (geometry.length < 2) throw new HttpError(400, 'El recorrido necesita al menos dos puntos');
+  // Carretera por defecto: si se editan los puntos, los tramos se recalculan por vías ciclables
+  return create(userId, { name: name.slice(0, 100), routing: 'road', waypoints: waypointsFrom(geometry), geometry });
+}
+
+// Cualquier GPX (con o sin marcas de tiempo) se convierte en ruta planificada
+async function importGpx(userId, buffer, filename) {
+  const { name, segments } = parseGpx(buffer);
+  const fallbackName = filename?.replace(/\.gpx$/i, '').trim() || 'Ruta importada';
+  return createFromGeometry(userId, name?.trim() || fallbackName, toGeometry(segments));
+}
+
+// "Repetir esta salida": su track completo o, si no hay, el trazado resumido
+async function fromActivity(userId, activityId) {
+  const activity = await activityService.getById(activityId, userId);
+  let segments;
+  try {
+    const track = await activityService.getTrack(activityId, userId);
+    segments = track.segments.map((seg) => seg.map(([lat, lon, ele]) => ({ lat, lon, ele })));
+  } catch (err) {
+    if (![404, 409].includes(err.status)) throw err;
+    segments = (activity.routePreview ?? []).map((seg) => seg.map(([lat, lon]) => ({ lat, lon, ele: null })));
+  }
+  if (!segments.flat().length) throw new HttpError(400, 'Esta salida no tiene recorrido GPS');
+  return createFromGeometry(userId, activity.title, toGeometry(segments));
+}
+
 async function remove(id, userId) {
   await getOwnedOrFail(id, userId);
   await PlannedRoute.remove(id);
@@ -113,4 +174,6 @@ async function exportGpx(id, userId) {
   return { filename: gpxFilename(route.name), content: toGpx(route) };
 }
 
-module.exports = { list, getById, create, update, remove, exportGpx, computeMetrics };
+module.exports = {
+  list, getById, create, update, remove, exportGpx, importGpx, fromActivity, computeMetrics,
+};

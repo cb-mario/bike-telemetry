@@ -88,7 +88,7 @@ const tokenFields = (data) => ({
 
 // Procesa la vuelta desde Strava y devuelve la URL del frontend a la que redirigir
 async function handleCallback({ code, scope, state, error }) {
-  const back = (status) => `${config().frontendUrl}/rutas?strava=${status}`;
+  const back = (status) => `${config().frontendUrl}/salidas?strava=${status}`;
   if (error) return back('denied');
   if (!code || !state) return back('error');
 

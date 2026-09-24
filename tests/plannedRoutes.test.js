@@ -164,3 +164,63 @@ describe('Rutas planificadas', () => {
     });
   });
 });
+
+describe('Rutas planificadas: importación', () => {
+  const { straightSegment, buildGpx } = require('./helpers/gpx');
+  let token;
+  const auth = (req) => req.set('Authorization', `Bearer ${token}`);
+
+  beforeEach(async () => {
+    await resetDb();
+    token = await registerUser('import@test.local');
+  });
+
+  it('un GPX sin marcas de tiempo (p. ej. de Komoot) se importa como ruta', async () => {
+    // 200 puntos hacia el norte ≈ 22 km, sin <time>
+    const segment = straightSegment({ n: 200, start: new Date(), ele: (i) => 600 + i }).map((p) => ({ ...p, time: null }));
+    const res = await auth(request(app).post('/api/planned-routes/import-gpx'))
+      .attach('file', buildGpx({ name: 'Ruta de Komoot', segments: [segment] }), 'komoot.gpx');
+    assert.equal(res.status, 201, JSON.stringify(res.body));
+    assert.equal(res.body.name, 'Ruta de Komoot');
+    assert.equal(res.body.routing, 'road');
+    assert.equal(res.body.distanceKm, 22.13);
+    assert.equal(res.body.geometry.length, 200);
+    // Puntos de paso cada 5 km: inicio, 4 intermedios y final
+    assert.equal(res.body.waypoints.length, 6);
+    assert.deepEqual(res.body.waypoints[0], [40, -3]);
+  });
+
+  it('sin nombre en el GPX usa el nombre del archivo', async () => {
+    const segment = straightSegment({ n: 10, start: new Date() });
+    const res = await auth(request(app).post('/api/planned-routes/import-gpx'))
+      .attach('file', buildGpx({ name: null, segments: [segment] }), 'Sierra Norte.gpx');
+    assert.equal(res.body.name, 'Sierra Norte');
+  });
+
+  it('archivo no GPX → 400', async () => {
+    const res = await auth(request(app).post('/api/planned-routes/import-gpx')).attach('file', Buffer.from('<kml/>'), 'ruta.gpx');
+    assert.equal(res.status, 400);
+  });
+
+  it('"Repetir esta salida" crea una ruta con el track de la salida', async () => {
+    const ride = straightSegment({ n: 50, start: new Date('2026-09-20T08:00:00Z'), ele: () => 700 });
+    const upload = await auth(request(app).post('/api/activities/upload-gpx'))
+      .attach('file', buildGpx({ name: 'Vuelta del domingo', segments: [ride] }), 'ride.gpx');
+    const res = await auth(request(app).post(`/api/planned-routes/from-activity/${upload.body.id}`));
+    assert.equal(res.status, 201, JSON.stringify(res.body));
+    assert.equal(res.body.name, 'Vuelta del domingo');
+    assert.equal(res.body.geometry.length, 50);
+    assert.deepEqual(res.body.geometry[0], [40, -3, 700]);
+    assert.equal(res.body.distanceKm, upload.body.distanceKm);
+  });
+
+  it('"Repetir" una salida manual sin GPS → 400; ajena → 404', async () => {
+    const manual = await auth(request(app).post('/api/activities'))
+      .send({ title: 'Manual', date: '2026-09-20', distanceKm: 20, durationMin: 60 });
+    assert.equal((await auth(request(app).post(`/api/planned-routes/from-activity/${manual.body.id}`))).status, 400);
+
+    const other = await registerUser('otro2@test.local');
+    const res = await request(app).post(`/api/planned-routes/from-activity/${manual.body.id}`).set('Authorization', `Bearer ${other}`);
+    assert.equal(res.status, 404);
+  });
+});

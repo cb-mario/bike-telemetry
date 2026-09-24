@@ -78,6 +78,17 @@ async function remove(req, res) {
   res.status(204).end();
 }
 
+async function importGpx(req, res) {
+  if (!req.file) throw new HttpError(400, 'Adjunta un archivo .gpx en el campo "file"');
+  res.status(201).json(await plannedRouteService.importGpx(req.user.id, req.file.buffer, req.file.originalname));
+}
+
+async function fromActivity(req, res) {
+  const activityId = Number(req.params.activityId);
+  if (!Number.isInteger(activityId) || activityId <= 0) throw new HttpError(400, 'ID de actividad no válido');
+  res.status(201).json(await plannedRouteService.fromActivity(req.user.id, activityId));
+}
+
 async function gpx(req, res) {
   const { filename, content } = await plannedRouteService.exportGpx(parseId(req.params.id), req.user.id);
   res.set('Content-Type', 'application/gpx+xml; charset=utf-8');
@@ -85,4 +96,4 @@ async function gpx(req, res) {
   res.send(content);
 }
 
-module.exports = { leg, list, getById, create, update, remove, gpx };
+module.exports = { leg, list, getById, create, update, remove, gpx, importGpx, fromActivity };

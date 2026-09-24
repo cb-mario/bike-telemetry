@@ -6,7 +6,7 @@ const { app, prisma, request, resetDb, registerUser } = require('./helpers/utils
 const { mockStrava, restoreFetch, stravaActivity } = require('./helpers/stravaMock');
 const { decrypt } = require('../src/utils/crypto');
 
-const FRONT = 'http://front.test/rutas';
+const FRONT = 'http://front.test/salidas';
 const nowSec = () => Math.floor(Date.now() / 1000);
 
 const tokenResponse = (overrides = {}) => [200, {
