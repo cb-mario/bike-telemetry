@@ -1,7 +1,8 @@
 const authService = require('../services/auth.service');
 const User = require('../models/user.model');
 const { HttpError } = require('../middlewares/errorHandler');
-const { parseNumber } = require('../utils/validation');
+const { parseProfile, PROFILE_FIELDS } = require('../utils/profileValidation');
+const { toPublicUser } = require('../services/profile.service');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 8;
@@ -34,9 +35,14 @@ function parseCredentials(body, { checkStrength }) {
   return { email: normalizedEmail, password };
 }
 
+// Registro: credenciales + datos de perfil opcionales (el alta por pasos los envía todos juntos)
 async function register(req, res) {
   const { email, password } = parseCredentials(req.body, { checkStrength: true });
-  const result = await authService.register(email, password);
+  const profile = parseProfile(req.body || {}, { ignore: ['email', 'password'] });
+  if (profile.restingHr != null && profile.maxHr != null && profile.restingHr >= profile.maxHr) {
+    throw new HttpError(400, 'La FC en reposo debe ser menor que la máxima');
+  }
+  const result = await authService.register(email, password, profile);
   res.status(201).json(result);
 }
 
@@ -49,23 +55,25 @@ async function login(req, res) {
 async function me(req, res) {
   const user = await User.findPublicById(req.user.id);
   if (!user) throw new HttpError(404, 'Usuario no encontrado');
-  res.json({ user });
+  res.json({ user: toPublicUser(user) });
 }
 
-// Actualiza el perfil: por ahora solo maxHr (null para borrarlo)
+// Actualiza el perfil (nombre, datos físicos, FC); null borra un campo opcional
 async function updateMe(req, res) {
-  const body = req.body || {};
-  const unknown = Object.keys(body).filter((key) => key !== 'maxHr');
-  if (unknown.length) throw new HttpError(400, `Campos no permitidos: ${unknown.join(', ')}`);
-  if (body.maxHr === undefined) throw new HttpError(400, 'No hay campos para actualizar');
+  const changes = parseProfile(req.body || {}, { allowed: PROFILE_FIELDS });
+  if (!Object.keys(changes).length) throw new HttpError(400, 'No hay campos para actualizar');
 
-  const maxHr = body.maxHr === null
-    ? null
-    : parseNumber(body.maxHr, 'maxHr', { min: 100, max: 220, integer: true });
+  const current = await User.findPublicById(req.user.id);
+  if (!current) throw new HttpError(404, 'Usuario no encontrado');
+  const resting = changes.restingHr !== undefined ? changes.restingHr : current.restingHr;
+  const max = changes.maxHr !== undefined ? changes.maxHr : current.maxHr;
+  if (resting != null && max != null && resting >= max) {
+    throw new HttpError(400, 'La FC en reposo debe ser menor que la máxima');
+  }
 
   try {
-    const user = await User.updateProfile(req.user.id, { maxHr });
-    res.json({ user });
+    const user = await User.updateProfile(req.user.id, changes);
+    res.json({ user: toPublicUser(user) });
   } catch (err) {
     // Token válido de un usuario que ya no existe
     if (err.code === 'P2025') throw new HttpError(404, 'Usuario no encontrado');

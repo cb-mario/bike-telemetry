@@ -12,11 +12,18 @@ datasource db {
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  email        String   @unique
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
   passwordHash String
   maxHr        Int? // FC máxima del usuario (bpm), base para las zonas de pulso
-  createdAt    DateTime @default(now())
+  // Perfil (registro por pasos); base de las estimaciones
+  name         String?
+  birthDate    DateTime?
+  sex          String? // "male" | "female" | "other"
+  heightCm     Int?
+  weightKg     Float?
+  restingHr    Int?
+  createdAt    DateTime  @default(now())
 
   // Conexión con Strava (tokens cifrados con AES-256-GCM, ver src/utils/crypto.js)
   stravaAthleteId      String?        @unique

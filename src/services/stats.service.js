@@ -1,6 +1,7 @@
 const Activity = require('../models/activity.model');
 const User = require('../models/user.model');
 const { HttpError } = require('../middlewares/errorHandler');
+const { estimatesFor } = require('./profile.service');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_BUCKETS = 12;
@@ -134,7 +135,11 @@ async function resolveMaxHr(userId) {
   if (!user) throw new HttpError(404, 'Usuario no encontrado');
   if (user.maxHr) return { maxHr: user.maxHr, source: 'profile' };
 
+  // Sin FC máx. en el perfil: la mayor entre la registrada en salidas y la estimada por edad
+  // (la registrada en salidas suaves suele quedarse corta)
   const recorded = await Activity.maxRecordedHr(userId);
+  const byAge = estimatesFor(user).maxHr;
+  if (byAge && (!recorded || byAge > recorded)) return { maxHr: byAge, source: 'age' };
   if (recorded) return { maxHr: recorded, source: 'activities' };
   return { maxHr: null, source: null };
 }

@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 const User = require('../models/user.model');
+const { toPublicUser } = require('./profile.service');
 const { HttpError } = require('../middlewares/errorHandler');
 
 // Coste de bcrypt configurable (los tests usan uno bajo para ir rápido)
@@ -23,7 +24,7 @@ function verifyToken(token) {
   return jwt.verify(token, process.env.JWT_SECRET, { algorithms: [JWT_ALGORITHM] });
 }
 
-async function register(email, password) {
+async function register(email, password, profile = {}) {
   if (await User.findByEmail(email)) {
     throw new HttpError(409, 'El email ya está registrado');
   }
@@ -31,14 +32,14 @@ async function register(email, password) {
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
   let user;
   try {
-    user = await User.create({ email, passwordHash });
+    user = await User.create({ email, passwordHash, ...profile });
   } catch (err) {
     // Registro simultáneo con el mismo email (violación de unicidad)
     if (err.code === 'P2002') throw new HttpError(409, 'El email ya está registrado');
     throw err;
   }
 
-  return { user, token: signToken(user) };
+  return { user: toPublicUser(user), token: signToken(user) };
 }
 
 async function login(email, password) {
@@ -49,8 +50,7 @@ async function login(email, password) {
     throw new HttpError(401, 'Credenciales inválidas');
   }
 
-  const { id, maxHr, createdAt } = user;
-  return { user: { id, email: user.email, maxHr, createdAt }, token: signToken(user) };
+  return { user: toPublicUser(await User.findPublicById(user.id)), token: signToken(user) };
 }
 
 module.exports = { register, login, verifyToken };
