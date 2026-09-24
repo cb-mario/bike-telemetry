@@ -1,4 +1,5 @@
 const activityService = require('../services/activity.service');
+const { analyzeGpx } = require('../services/gpx.service');
 const { HttpError } = require('../middlewares/errorHandler');
 const { parseNumber, parseDate, parseDateRange } = require('../utils/validation');
 
@@ -117,9 +118,41 @@ async function update(req, res) {
   res.json(activity);
 }
 
+// Importa un .gpx (multipart, campo "file"; "title" opcional) y crea la actividad con su track
+async function uploadGpx(req, res) {
+  if (!req.file) throw new HttpError(400, 'Adjunta un archivo .gpx en el campo "file"');
+
+  const { name, stats, track } = analyzeGpx(req.file.buffer);
+  const title = req.body?.title?.trim() || name?.trim() || `Salida del ${stats.startTime.toISOString().slice(0, 10)}`;
+
+  // Los datos calculados pasan por la misma validación que una actividad manual
+  let data;
+  try {
+    data = parseActivity({
+      title: title.slice(0, 100),
+      date: stats.startTime.toISOString(),
+      distanceKm: stats.distanceKm,
+      durationMin: stats.durationMin,
+      elevationGain: stats.elevationGain,
+      avgHr: stats.avgHr,
+      maxHr: stats.maxHr,
+    }, { partial: false });
+  } catch (err) {
+    if (err instanceof HttpError) throw new HttpError(400, `El GPX genera datos no válidos: ${err.message}`);
+    throw err;
+  }
+
+  const activity = await activityService.createFromGpx(req.user.id, data, track);
+  res.status(201).json(activity);
+}
+
+async function getTrack(req, res) {
+  res.json(await activityService.getTrack(parseId(req.params.id), req.user.id));
+}
+
 async function remove(req, res) {
   await activityService.remove(parseId(req.params.id), req.user.id);
   res.status(204).end();
 }
 
-module.exports = { list, getById, create, update, remove };
+module.exports = { list, getById, create, uploadGpx, getTrack, update, remove };

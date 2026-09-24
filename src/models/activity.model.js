@@ -1,5 +1,8 @@
 const prisma = require('./prisma');
 
+// Las respuestas incluyen solo la miniatura del track, nunca todos los puntos
+const withPreview = { track: { select: { preview: true } } };
+
 // Filtro por usuario y rango de fechas opcional
 function buildWhere({ userId, from, to }) {
   const where = { userId };
@@ -17,6 +20,7 @@ function findManyByUser({ userId, from, to, limit, offset }) {
     orderBy: [{ date: 'desc' }, { id: 'desc' }],
     take: limit,
     skip: offset,
+    include: withPreview,
   });
 }
 
@@ -25,15 +29,27 @@ function countByUser({ userId, from, to }) {
 }
 
 function findByIdForUser(id, userId) {
-  return prisma.activity.findFirst({ where: { id, userId } });
+  return prisma.activity.findFirst({ where: { id, userId }, include: withPreview });
 }
 
 function create(userId, data) {
-  return prisma.activity.create({ data: { ...data, userId } });
+  return prisma.activity.create({ data: { ...data, userId }, include: withPreview });
+}
+
+// Crea la actividad y su track en una sola operación
+function createWithTrack(userId, data, track) {
+  return prisma.activity.create({
+    data: { ...data, userId, source: 'gpx', track: { create: track } },
+    include: withPreview,
+  });
+}
+
+function findTrack(activityId) {
+  return prisma.activityTrack.findUnique({ where: { activityId } });
 }
 
 function update(id, data) {
-  return prisma.activity.update({ where: { id }, data });
+  return prisma.activity.update({ where: { id }, data, include: withPreview });
 }
 
 function remove(id) {
@@ -58,4 +74,7 @@ async function maxRecordedHr(userId) {
   return result._max.maxHr;
 }
 
-module.exports = { findForStats, maxRecordedHr, findManyByUser, countByUser, findByIdForUser, create, update, remove };
+module.exports = {
+  findForStats, maxRecordedHr, findManyByUser, countByUser, findByIdForUser,
+  create, createWithTrack, findTrack, update, remove,
+};

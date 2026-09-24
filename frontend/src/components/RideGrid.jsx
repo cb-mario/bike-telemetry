@@ -5,6 +5,7 @@ import { Label } from './ui/Text'
 import { api } from '../lib/api'
 import { formatDuration, formatNumber, formatWeekdayDate } from '../lib/format'
 import { ZONE_BG, zoneFor } from '../lib/zones'
+import { RoutePreview } from './RoutePreview'
 
 export function RideGrid({ activities, zones, loading, onChanged, onLoadMore, onCreate }) {
   const [loadingMore, setLoadingMore] = useState(false)
@@ -95,12 +96,18 @@ function RideCard({ ride: r, zone, onDeleted }) {
         <ZoneBadge zone={zone} />
       </div>
 
-      <div className="min-w-0">
-        <h3 className="truncate text-sm font-medium text-zinc-100" title={r.title}>{r.title}</h3>
-        <p className="mt-2 text-3xl font-semibold tracking-tight text-zinc-100">
-          {formatNumber(r.distanceKm, 1)}{' '}
-          <span className="ml-0.5 text-base font-normal tracking-normal text-zinc-400">km</span>
-        </p>
+      <div className="flex items-end justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="truncate text-sm font-medium text-zinc-100" title={r.title}>{r.title}</h3>
+          <p className="mt-2 text-3xl font-semibold tracking-tight text-zinc-100">
+            {formatNumber(r.distanceKm, 1)}{' '}
+            <span className="ml-0.5 text-base font-normal tracking-normal text-zinc-400">km</span>
+          </p>
+        </div>
+        {r.routePreview && (
+          <RoutePreview segments={r.routePreview} width={88} height={52} padding={3}
+            className="shrink-0 opacity-80 transition-opacity duration-200 group-hover:opacity-100" />
+        )}
       </div>
 
       <dl className="grid grid-cols-3 gap-3 border-t border-zinc-800 pt-4">

@@ -1,6 +1,12 @@
+const http = require('node:http');
 const request = require('supertest');
 
-const app = require('../../src/app');
+// Un único servidor por fichero de test. Con request(expressApp) supertest abre y cierra
+// un servidor por petición; al reutilizarse puertos, el agente keep-alive de Node puede
+// usar una conexión ya cerrada y fallar de forma intermitente con ECONNRESET.
+// unref() evita que el servidor mantenga vivo el proceso al terminar los tests.
+const app = http.createServer(require('../../src/app')).listen(0);
+app.unref();
 const prisma = require('../../src/models/prisma');
 
 const PASSWORD = 'supersecreta';

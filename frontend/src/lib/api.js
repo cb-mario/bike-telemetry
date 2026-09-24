@@ -38,15 +38,17 @@ export async function api(path, { method = 'GET', body, query } = {}) {
   }
 
   const token = tokenStorage.get()
+  // FormData (subida de archivos) va tal cual: el navegador pone el Content-Type multipart
+  const isForm = body instanceof FormData
   let res
   try {
     res = await fetch(url, {
       method,
       headers: {
-        ...(body !== undefined && { 'Content-Type': 'application/json' }),
+        ...(body !== undefined && !isForm && { 'Content-Type': 'application/json' }),
         ...(token && { Authorization: `Bearer ${token}` }),
       },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: body === undefined || isForm ? body : JSON.stringify(body),
     })
   } catch {
     throw new ApiError(0, 'No se puede conectar con el servidor')

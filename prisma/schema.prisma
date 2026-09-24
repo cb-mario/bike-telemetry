@@ -32,7 +32,26 @@ model Activity {
   maxHr         Int? // bpm (opcional)
   elevationGain Int? // metros de desnivel positivo (opcional)
   notes         String?
+  source        String   @default("manual") // "manual" | "gpx"
   createdAt     DateTime @default(now())
+  track         ActivityTrack?
 
   @@index([userId, date])
+}
+
+// Track GPS de una actividad importada (1:1). Se guarda aparte para no cargarlo al listar
+model ActivityTrack {
+  id         Int      @id @default(autoincrement())
+  activityId Int      @unique
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  // JSON: segmentos de puntos [lat, lon, ele|null, segundosDesdeInicio|null, fc|null]
+  points     String
+  // JSON: versión reducida [[lat, lon], ...] por segmento, para miniaturas
+  preview    String
+  pointCount Int
+  minLat     Float
+  maxLat     Float
+  minLon     Float
+  maxLon     Float
+  createdAt  DateTime @default(now())
 }
