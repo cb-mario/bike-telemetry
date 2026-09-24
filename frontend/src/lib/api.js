@@ -55,6 +55,11 @@ export async function api(path, { method = 'GET', body, query } = {}) {
   if (res.status === 204) return null
   const data = await res.json().catch(() => null)
 
+  // El proxy de Vite responde 502/503/504 sin cuerpo JSON cuando el backend no está arrancado
+  if (!data && [502, 503, 504].includes(res.status)) {
+    throw new ApiError(res.status, 'No se puede conectar con el servidor. ¿Está arrancado el backend (npm run dev)?')
+  }
+
   if (!res.ok) {
     // Token caducado o inválido en una ruta protegida: cerrar sesión
     if (res.status === 401 && token && !path.startsWith('/auth/login')) onUnauthorized()
