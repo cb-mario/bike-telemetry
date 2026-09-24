@@ -10,6 +10,7 @@ const router = Router();
 router.use(authMiddleware);
 
 router.get('/', activityController.list);
+router.get('/routes', activityController.routes);
 router.post('/', activityController.create);
 router.post('/upload-gpx', uploadGpx, activityController.uploadGpx);
 router.get('/:id', activityController.getById);

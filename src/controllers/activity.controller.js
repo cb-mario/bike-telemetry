@@ -1,84 +1,11 @@
 const activityService = require('../services/activity.service');
 const { analyzeGpx } = require('../services/gpx.service');
 const { HttpError } = require('../middlewares/errorHandler');
-const { parseNumber, parseDate, parseDateRange } = require('../utils/validation');
+const { parseNumber, parseDateRange } = require('../utils/validation');
+const { parseActivity, SPORT_TYPES } = require('../utils/activityValidation');
 
-const HR_MIN = 40;
-const HR_MAX = 220;
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
-
-// Reglas por campo: required en creación, nullable = se puede borrar con null
-const FIELDS = {
-  title: { required: true, parse: parseTitle },
-  date: { required: true, parse: parseActivityDate },
-  distanceKm: { required: true, parse: (v, f) => parseNumber(v, f, { min: 0, max: 1000, exclusiveMin: true }) },
-  durationMin: { required: true, parse: (v, f) => parseNumber(v, f, { min: 1, max: 2880, integer: true }) },
-  avgHr: { nullable: true, parse: (v, f) => parseNumber(v, f, { min: HR_MIN, max: HR_MAX, integer: true }) },
-  maxHr: { nullable: true, parse: (v, f) => parseNumber(v, f, { min: HR_MIN, max: HR_MAX, integer: true }) },
-  elevationGain: { nullable: true, parse: (v, f) => parseNumber(v, f, { min: 0, max: 20000, integer: true }) },
-  notes: { nullable: true, parse: parseNotes },
-};
-
-function parseTitle(value) {
-  if (typeof value !== 'string' || !value.trim()) {
-    throw new HttpError(400, 'El título es obligatorio');
-  }
-  if (value.trim().length > 100) {
-    throw new HttpError(400, 'El título no puede superar 100 caracteres');
-  }
-  return value.trim();
-}
-
-function parseNotes(value) {
-  if (typeof value !== 'string') throw new HttpError(400, 'Las notas deben ser texto');
-  if (value.length > 2000) throw new HttpError(400, 'Las notas no pueden superar 2000 caracteres');
-  return value.trim() || null;
-}
-
-function parseActivityDate(value, field) {
-  const date = parseDate(value, field);
-  // Margen de 1 día por diferencias de zona horaria
-  if (date.getTime() > Date.now() + 24 * 60 * 60 * 1000) {
-    throw new HttpError(400, 'La fecha de la actividad no puede estar en el futuro');
-  }
-  if (date.getUTCFullYear() < 1900) {
-    throw new HttpError(400, 'La fecha de la actividad no es válida');
-  }
-  return date;
-}
-
-// Valida el body; en modo parcial (PATCH) solo los campos presentes
-function parseActivity(body, { partial }) {
-  if (!body || typeof body !== 'object' || Array.isArray(body)) {
-    throw new HttpError(400, 'El cuerpo de la petición debe ser un objeto JSON');
-  }
-
-  const unknown = Object.keys(body).filter((key) => !(key in FIELDS));
-  if (unknown.length) {
-    throw new HttpError(400, `Campos no permitidos: ${unknown.join(', ')}`);
-  }
-
-  const data = {};
-  for (const [field, rule] of Object.entries(FIELDS)) {
-    const value = body[field];
-    if (value === undefined) {
-      if (rule.required && !partial) throw new HttpError(400, `${field} es obligatorio`);
-      continue;
-    }
-    if (value === null) {
-      if (!rule.nullable) throw new HttpError(400, `${field} no puede ser null`);
-      data[field] = null;
-      continue;
-    }
-    data[field] = rule.parse(value, field);
-  }
-
-  if (partial && Object.keys(data).length === 0) {
-    throw new HttpError(400, 'No hay campos para actualizar');
-  }
-  return data;
-}
 
 function parseId(value) {
   const id = Number(value);
@@ -86,9 +13,32 @@ function parseId(value) {
   return id;
 }
 
+const optionalNumber = (value, field, max) => (
+  value !== undefined && value !== '' ? parseNumber(Number(value), field, { min: 0, max }) : undefined
+);
+
 function parseListQuery(query) {
-  const { limit, offset } = query;
+  const { limit, offset, q, sportType } = query;
+  if (q !== undefined && (typeof q !== 'string' || q.length > 100)) throw new HttpError(400, 'q no válido');
+  if (sportType !== undefined && !SPORT_TYPES.includes(sportType)) {
+    throw new HttpError(400, `sportType debe ser uno de: ${SPORT_TYPES.join(', ')}`);
+  }
+  const filters = {
+    q: q?.trim() || undefined,
+    sportType,
+    minKm: optionalNumber(query.minKm, 'minKm', 1000),
+    maxKm: optionalNumber(query.maxKm, 'maxKm', 1000),
+    minElevation: optionalNumber(query.minElevation, 'minElevation', 20000),
+    maxElevation: optionalNumber(query.maxElevation, 'maxElevation', 20000),
+  };
+  if (filters.minKm != null && filters.maxKm != null && filters.minKm > filters.maxKm) {
+    throw new HttpError(400, 'minKm no puede ser mayor que maxKm');
+  }
+  if (filters.minElevation != null && filters.maxElevation != null && filters.minElevation > filters.maxElevation) {
+    throw new HttpError(400, 'minElevation no puede ser mayor que maxElevation');
+  }
   return {
+    ...filters,
     ...parseDateRange(query),
     limit: limit !== undefined ? parseNumber(Number(limit), 'limit', { min: 1, max: MAX_LIMIT, integer: true }) : DEFAULT_LIMIT,
     offset: offset !== undefined ? parseNumber(Number(offset), 'offset', { min: 0, max: Number.MAX_SAFE_INTEGER, integer: true }) : 0,
@@ -122,7 +72,7 @@ async function update(req, res) {
 async function uploadGpx(req, res) {
   if (!req.file) throw new HttpError(400, 'Adjunta un archivo .gpx en el campo "file"');
 
-  const { name, stats, track } = analyzeGpx(req.file.buffer);
+  const { name, stats, track, summaryPolyline } = analyzeGpx(req.file.buffer);
   const title = req.body?.title?.trim() || name?.trim() || `Salida del ${stats.startTime.toISOString().slice(0, 10)}`;
 
   // Los datos calculados pasan por la misma validación que una actividad manual
@@ -136,14 +86,19 @@ async function uploadGpx(req, res) {
       elevationGain: stats.elevationGain,
       avgHr: stats.avgHr,
       maxHr: stats.maxHr,
+      maxSpeedKmh: stats.maxSpeedKmh,
     }, { partial: false });
   } catch (err) {
     if (err instanceof HttpError) throw new HttpError(400, `El GPX genera datos no válidos: ${err.message}`);
     throw err;
   }
 
-  const activity = await activityService.createFromGpx(req.user.id, data, track);
+  const activity = await activityService.createFromGpx(req.user.id, { ...data, summaryPolyline }, track);
   res.status(201).json(activity);
+}
+
+async function routes(req, res) {
+  res.json(await activityService.routes(req.user.id, parseDateRange(req.query)));
 }
 
 async function getTrack(req, res) {
@@ -155,4 +110,4 @@ async function remove(req, res) {
   res.status(204).end();
 }
 
-module.exports = { list, getById, create, uploadGpx, getTrack, update, remove };
+module.exports = { list, routes, getById, create, uploadGpx, getTrack, update, remove };

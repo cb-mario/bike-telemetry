@@ -19,4 +19,25 @@ function updateProfile(id, data) {
   return prisma.user.update({ where: { id }, data, select: publicFields });
 }
 
-module.exports = { findByEmail, findPublicById, create, updateProfile };
+// --- Strava ---
+
+const stravaFields = {
+  id: true, stravaAthleteId: true, stravaAccessToken: true, stravaRefreshToken: true,
+  stravaTokenExpiresAt: true, stravaLastSyncAt: true,
+};
+
+function findStravaById(id) {
+  return prisma.user.findUnique({ where: { id }, select: stravaFields });
+}
+
+function findByStravaAthleteId(stravaAthleteId) {
+  return prisma.user.findUnique({ where: { stravaAthleteId }, select: { id: true } });
+}
+
+function updateStrava(id, data) {
+  return prisma.user.update({ where: { id }, data, select: stravaFields });
+}
+
+module.exports = {
+  findByEmail, findPublicById, create, updateProfile, findStravaById, findByStravaAthleteId, updateStrava,
+};

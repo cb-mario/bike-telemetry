@@ -15,9 +15,13 @@ function notFound(req, res) {
 // eslint-disable-next-line no-unused-vars
 function errorHandler(err, req, res, next) {
   const status = err.status || err.statusCode || 500;
-  if (status >= 500) console.error(err);
+  // Los HttpError son intencionados (p. ej. 502/503 de Strava) y su mensaje es seguro;
+  // cualquier otro 5xx es inesperado: se registra y se oculta el detalle al cliente
+  const expected = err instanceof HttpError;
+  if (status >= 500 && !expected) console.error(err);
+
   let message = err.message;
-  if (status >= 500) message = 'Error interno del servidor';
+  if (status >= 500 && !expected) message = 'Error interno del servidor';
   else if (err.type === 'entity.parse.failed') message = 'JSON mal formado';
 
   res.status(status).json({ error: message });

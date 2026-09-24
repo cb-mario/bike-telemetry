@@ -12,29 +12,40 @@ datasource db {
 }
 
 model User {
-  id           Int        @id @default(autoincrement())
-  email        String     @unique
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
   passwordHash String
   maxHr        Int? // FC máxima del usuario (bpm), base para las zonas de pulso
-  createdAt    DateTime   @default(now())
-  activities   Activity[]
+  createdAt    DateTime @default(now())
+
+  // Conexión con Strava (tokens cifrados con AES-256-GCM, ver src/utils/crypto.js)
+  stravaAthleteId      String?    @unique
+  stravaAccessToken    String?
+  stravaRefreshToken   String?
+  stravaTokenExpiresAt DateTime?
+  stravaLastSyncAt     DateTime?
+  activities           Activity[]
 }
 
 model Activity {
-  id            Int      @id @default(autoincrement())
-  userId        Int
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title         String
-  date          DateTime
-  distanceKm    Float
-  durationMin   Int
-  avgHr         Int? // bpm (opcional)
-  maxHr         Int? // bpm (opcional)
-  elevationGain Int? // metros de desnivel positivo (opcional)
-  notes         String?
-  source        String   @default("manual") // "manual" | "gpx"
-  createdAt     DateTime @default(now())
-  track         ActivityTrack?
+  id              Int            @id @default(autoincrement())
+  userId          Int
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title           String
+  date            DateTime
+  distanceKm      Float
+  durationMin     Int
+  avgHr           Int? // bpm (opcional)
+  maxHr           Int? // bpm (opcional)
+  elevationGain   Int? // metros de desnivel positivo (opcional)
+  notes           String?
+  source          String         @default("manual") // "manual" | "gpx" | "strava"
+  sportType       String? // Ride, GravelRide, MountainBikeRide, VirtualRide, EBikeRide...
+  maxSpeedKmh     Float?
+  stravaId        String?        @unique
+  summaryPolyline String? // Polilínea codificada (formato Google/Strava) para mapas y miniaturas
+  createdAt       DateTime       @default(now())
+  track           ActivityTrack?
 
   @@index([userId, date])
 }
