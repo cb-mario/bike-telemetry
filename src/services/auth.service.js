@@ -4,7 +4,8 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/user.model');
 const { HttpError } = require('../middlewares/errorHandler');
 
-const SALT_ROUNDS = 12;
+// Coste de bcrypt configurable (los tests usan uno bajo para ir rápido)
+const SALT_ROUNDS = Number(process.env.BCRYPT_ROUNDS) || 12;
 const JWT_ALGORITHM = 'HS256';
 
 // Hash de relleno: si el email no existe se compara igualmente para que el
