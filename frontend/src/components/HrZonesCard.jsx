@@ -5,9 +5,9 @@ import { Input } from './ui/Field'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import { formatDuration, formatKm, formatNumber } from '../lib/format'
+// Rampa ordinal: más intensidad → azul más claro (validada sobre las tarjetas)
+import { ZONE_BG } from '../lib/zones'
 
-// Rampa ordinal: más intensidad → azul más claro (validada sobre #09090b)
-const ZONE_BG = ['bg-zone-1', 'bg-zone-2', 'bg-zone-3', 'bg-zone-4', 'bg-zone-5']
 
 const SOURCE_LABEL = {
   profile: 'de tu perfil',
@@ -61,7 +61,7 @@ function ZoneBars({ data }) {
                 <span className="font-medium text-ink tabular-nums">{formatNumber(z.percentTime, 1)} %</span>
               </div>
               <div className="flex items-center">
-                <div className="h-2 flex-1 rounded-r bg-zinc-900" aria-hidden>
+                <div className="h-2 flex-1 rounded-r bg-zinc-800/60" aria-hidden>
                   {/* Barra horizontal: extremo redondeado, base recta en el origen */}
                   {z.percentTime > 0 && (
                     <div style={{ width: `${width}%` }}
@@ -144,7 +144,7 @@ function MaxHrEditor({ data, onSaved }) {
       <div className="mt-1.5 flex gap-2">
         <Input id="max-hr" type="number" inputMode="numeric" min={100} max={220} step={1} required autoFocus
           value={value} onChange={(e) => setValue(e.target.value)} className="w-24" />
-        <Button type="submit" size="md" disabled={saving}>Guardar</Button>
+        <Button type="submit" size="md" loading={saving}>Guardar</Button>
         {user.maxHr && (
           <Button variant="ghost" onClick={() => save(null)} disabled={saving}>Quitar</Button>
         )}

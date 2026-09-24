@@ -15,13 +15,14 @@ export function Dialog({ open, onClose, title, description, children }) {
       ref={ref}
       onClose={onClose}
       onClick={(e) => e.target === ref.current && onClose()}
-      className="m-auto w-[calc(100%-2rem)] max-w-lg rounded-xl border border-zinc-800 bg-surface p-0 text-ink
-        shadow-2xl backdrop:bg-black/70 backdrop:backdrop-blur-sm"
+      className="m-auto w-[calc(100%-2rem)] max-w-lg rounded-2xl border border-zinc-800 bg-zinc-900/85 p-0 text-ink
+        shadow-2xl shadow-black/50 backdrop-blur-md backdrop:bg-black/60 backdrop:backdrop-blur-sm
+        open:animate-[dialog-in_200ms_ease-out]"
     >
       {open && (
         <div className="p-6">
-          <h2 className="text-base font-semibold">{title}</h2>
-          {description && <p className="mt-1 text-sm text-ink-muted">{description}</p>}
+          <h2 className="text-lg font-semibold tracking-tight text-zinc-100">{title}</h2>
+          {description && <p className="mt-1 text-sm text-zinc-400">{description}</p>}
           <div className="mt-5">{children}</div>
         </div>
       )}

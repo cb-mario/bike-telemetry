@@ -1,7 +1,9 @@
+import { Spinner } from './Spinner'
+
 const VARIANTS = {
-  primary: 'bg-ink text-surface hover:bg-zinc-200',
-  secondary: 'border border-zinc-800 bg-zinc-900 text-ink hover:bg-zinc-800',
-  ghost: 'text-ink-secondary hover:bg-zinc-900 hover:text-ink',
+  primary: 'bg-zinc-100 text-zinc-900 shadow-sm hover:bg-white hover:shadow-md hover:shadow-white/5',
+  secondary: 'border border-zinc-800 bg-zinc-900/70 text-zinc-100 hover:border-zinc-700 hover:bg-zinc-800/80',
+  ghost: 'text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-100',
   danger: 'text-critical hover:bg-critical/10',
 }
 
@@ -10,14 +12,28 @@ const SIZES = {
   md: 'h-9 px-4 text-sm',
 }
 
-export function Button({ variant = 'primary', size = 'md', className = '', type = 'button', ...props }) {
+// Botón con microinteracciones (hover suave, pulsación) y estado de carga
+export function Button({
+  variant = 'primary', size = 'md', loading = false, disabled, className = '', type = 'button', children, ...props
+}) {
   return (
     <button
       type={type}
-      className={`inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
+      className={`relative inline-flex items-center justify-center gap-2 rounded-lg font-medium
+        transition-all duration-200 ease-out active:scale-[0.97]
         focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-series
         disabled:pointer-events-none disabled:opacity-50 ${VARIANTS[variant]} ${SIZES[size]} ${className}`}
       {...props}
-    />
+    >
+      {/* El texto se mantiene (invisible) para que el botón no cambie de ancho al cargar */}
+      <span className={`inline-flex items-center gap-2 ${loading ? 'invisible' : ''}`}>{children}</span>
+      {loading && (
+        <span className="absolute inset-0 flex items-center justify-center">
+          <Spinner />
+        </span>
+      )}
+    </button>
   )
 }

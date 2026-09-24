@@ -1,16 +1,18 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useDashboardData } from '../lib/useDashboardData'
+import { useOverview } from '../lib/useOverview'
 import { RANGES } from '../lib/ranges'
 import { Button } from '../components/ui/Button'
+import { Card } from '../components/ui/Card'
 import { Dialog } from '../components/ui/Dialog'
 import { FormError } from '../components/ui/Field'
 import { SegmentedControl } from '../components/ui/SegmentedControl'
 import { Logo } from '../components/Logo'
-import { StatTiles } from '../components/StatTiles'
+import { OverviewCards } from '../components/OverviewCards'
 import { EvolutionChart } from '../components/EvolutionChart'
 import { HrZonesCard } from '../components/HrZonesCard'
-import { ActivityTable } from '../components/ActivityTable'
+import { RideGrid } from '../components/RideGrid'
 import { ActivityForm } from '../components/ActivityForm'
 
 export function DashboardPage() {
@@ -18,55 +20,60 @@ export function DashboardPage() {
   const [range, setRange] = useState('12w')
   const [refreshKey, setRefreshKey] = useState(0)
   const [creating, setCreating] = useState(false)
+  const overview = useOverview(refreshKey)
   const { data, loading, error, loadMoreActivities } = useDashboardData(range, refreshKey)
 
   const refresh = () => setRefreshKey((k) => k + 1)
 
   return (
     <div className="min-h-svh">
-      <header className="sticky top-0 z-20 border-b border-zinc-800 bg-surface/80 backdrop-blur-md">
+      <header className="sticky top-0 z-20 border-b border-zinc-800/80 bg-surface/70 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
           <Logo />
           <div className="flex items-center gap-2">
-            <span className="hidden text-xs text-ink-muted sm:inline">{user.email}</span>
+            <span className="hidden text-xs text-zinc-500 sm:inline">{user.email}</span>
             <Button variant="ghost" size="sm" onClick={logout}>Salir</Button>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6">
+      <main className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-10 sm:px-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Tu rendimiento</h1>
-            <p className="mt-1 text-sm text-ink-muted">Métricas de tus salidas en bici</p>
+            <h1 className="text-3xl font-semibold tracking-tight text-zinc-100">Tu rendimiento</h1>
+            <p className="mt-1.5 text-sm text-zinc-400">Métricas de tus salidas en bici</p>
           </div>
           <Button onClick={() => setCreating(true)}>
             <span aria-hidden className="text-base leading-none">+</span> Nueva salida
           </Button>
         </div>
 
-        {/* Filtro único: afecta a todo lo que hay debajo */}
-        <div className="self-start">
-          <SegmentedControl label="Periodo" options={RANGES} value={range} onChange={setRange} />
-        </div>
+        {/* Resumen global: no depende del filtro de periodo */}
+        <OverviewCards overview={overview} />
 
-        <FormError>{error}</FormError>
+        <div className="flex flex-col gap-6">
+          {/* Filtro único: afecta a todo lo que hay debajo */}
+          <div className="self-start">
+            <SegmentedControl label="Periodo" options={RANGES} value={range} onChange={setRange} />
+          </div>
 
-        {data && (
-          <>
-            <div className={`transition-opacity ${loading ? 'opacity-50' : ''}`}>
-              <StatTiles summary={data.summary} />
-            </div>
-            <div className="grid gap-6 lg:grid-cols-3">
-              <div className="min-w-0 lg:col-span-2">
-                <EvolutionChart evolution={data.evolution} loading={loading} />
+          <FormError>{error}</FormError>
+
+          {data ? (
+            <>
+              <div className="grid gap-6 lg:grid-cols-3">
+                <div className="flex min-w-0 flex-col lg:col-span-2">
+                  <EvolutionChart evolution={data.evolution} summary={data.summary} loading={loading} />
+                </div>
+                <HrZonesCard zones={data.zones} loading={loading} onProfileChange={refresh} />
               </div>
-              <HrZonesCard zones={data.zones} loading={loading} onProfileChange={refresh} />
-            </div>
-            <ActivityTable activities={data.activities} loading={loading}
-              onChanged={refresh} onLoadMore={loadMoreActivities} onCreate={() => setCreating(true)} />
-          </>
-        )}
+              <RideGrid activities={data.activities} zones={data.zones.zones} loading={loading}
+                onChanged={refresh} onLoadMore={loadMoreActivities} onCreate={() => setCreating(true)} />
+            </>
+          ) : (
+            !error && <DashboardSkeleton />
+          )}
+        </div>
       </main>
 
       <Dialog open={creating} onClose={() => setCreating(false)} title="Nueva salida"
@@ -79,6 +86,15 @@ export function DashboardPage() {
           }}
         />
       </Dialog>
+    </div>
+  )
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="grid gap-6 lg:grid-cols-3" aria-busy="true" aria-label="Cargando métricas">
+      <Card as="div" className="h-[480px] animate-pulse lg:col-span-2" />
+      <Card as="div" className="h-[480px] animate-pulse" />
     </div>
   )
 }

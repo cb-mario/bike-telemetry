@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Card, CardHeader } from './ui/Card'
 import { SegmentedControl } from './ui/SegmentedControl'
+import { Label } from './ui/Text'
 import { useElementSize } from '../lib/useElementSize'
 import { formatDate, formatDuration, formatKm, formatMonth, formatMonthYear, formatNumber, formatShortDate } from '../lib/format'
 
@@ -40,14 +41,14 @@ function periodLabel(bucket, period, long = false) {
   return long ? `Semana del ${formatDate(bucket.periodStart)}` : formatShortDate(bucket.periodStart)
 }
 
-export function EvolutionChart({ evolution, loading }) {
+export function EvolutionChart({ evolution, summary, loading }) {
   const [metricKey, setMetricKey] = useState('distanceKm')
   const [view, setView] = useState('chart')
   const metric = METRICS.find((m) => m.value === metricKey)
   const { period, buckets } = evolution
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-1 flex-col">
       <CardHeader
         title={`${metric.label} por ${period === 'month' ? 'mes' : 'semana'}`}
         description={`${buckets.length} ${period === 'month' ? 'meses' : 'semanas'}`}
@@ -58,12 +59,33 @@ export function EvolutionChart({ evolution, loading }) {
           </div>
         }
       />
+      <PeriodSummary summary={summary} loading={loading} />
       <div className={`flex flex-1 flex-col px-5 pt-4 pb-5 transition-opacity ${loading ? 'opacity-50' : ''}`}>
         {view === 'chart'
           ? <Columns buckets={buckets} period={period} metric={metric} />
           : <EvolutionTable buckets={buckets} period={period} />}
       </div>
     </Card>
+  )
+}
+
+// Totales del periodo seleccionado, en una fila compacta
+function PeriodSummary({ summary: s, loading }) {
+  const items = [
+    ['Distancia', formatKm(s.distanceKm)],
+    ['Tiempo', formatDuration(s.durationMin)],
+    ['Desnivel', `${formatNumber(s.elevationGain)} m`],
+    ['Vel. media', s.avgSpeedKmh != null ? `${formatNumber(s.avgSpeedKmh, 1)} km/h` : '—'],
+  ]
+  return (
+    <dl className={`mx-5 mt-4 grid grid-cols-2 gap-4 border-b border-zinc-800 pb-4 transition-opacity sm:grid-cols-4 ${loading ? 'opacity-50' : ''}`}>
+      {items.map(([label, value]) => (
+        <div key={label} className="min-w-0">
+          <Label as="dt">{label}</Label>
+          <dd className="mt-1 truncate text-lg font-semibold tracking-tight text-zinc-100">{value}</dd>
+        </div>
+      ))}
+    </dl>
   )
 }
 
@@ -98,7 +120,7 @@ function Columns({ buckets, period, metric }) {
           {ticks.map((t) => (
             <g key={t}>
               <line x1={MARGIN.left} x2={width - MARGIN.right} y1={y(t)} y2={y(t)}
-                stroke={t === 0 ? '#3f3f46' : '#27272a'} strokeWidth="1" shapeRendering="crispEdges" />
+                stroke={t === 0 ? '#52525b' : '#27272a'} strokeWidth="1" shapeRendering="crispEdges" />
               <text x={MARGIN.left - 8} y={y(t)} dy="0.32em" textAnchor="end"
                 className="fill-ink-muted text-[11px] tabular-nums">
                 {formatNumber(t, step < 1 ? 1 : 0)}
@@ -142,7 +164,7 @@ function Columns({ buckets, period, metric }) {
 
       {activeBucket && (
         <div
-          className={`pointer-events-none absolute top-2 z-10 min-w-40 rounded-lg border border-zinc-800 bg-zinc-950/95 px-3 py-2 text-xs shadow-xl backdrop-blur
+          className={`pointer-events-none absolute top-2 z-10 min-w-40 rounded-lg border border-zinc-700/80 bg-zinc-950/95 px-3 py-2 text-xs shadow-xl backdrop-blur
             ${xCenter(active) > width / 2 ? '-translate-x-full' : ''}`}
           // Al lado de la columna activa (a la izquierda si está en la mitad derecha) para no taparla
           style={{ left: xCenter(active) + (xCenter(active) > width / 2 ? -1 : 1) * (barW / 2 + 8) }}
@@ -164,7 +186,7 @@ function EvolutionTable({ buckets, period }) {
     <div className="relative flex-1" style={{ minHeight: MIN_HEIGHT }}>
       <div className="absolute inset-0 overflow-auto">
         <table className="w-full min-w-[26rem] text-left text-xs whitespace-nowrap tabular-nums">
-          <thead className="sticky top-0 bg-surface text-ink-muted">
+          <thead className="sticky top-0 bg-zinc-900 text-[10px] tracking-wider text-zinc-400 uppercase">
             <tr className="border-b border-zinc-800">
               <th className="py-2 font-medium">{period === 'month' ? 'Mes' : 'Semana'}</th>
               <th className="py-2 pl-4 text-right font-medium">Salidas</th>

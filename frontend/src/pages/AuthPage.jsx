@@ -36,11 +36,11 @@ export function AuthPage() {
     <main className="flex min-h-svh flex-col items-center justify-center px-4 py-12">
       <Logo className="mb-8" />
 
-      <div className="w-full max-w-sm rounded-xl border border-zinc-800 p-6 sm:p-8">
-        <h1 className="text-xl font-semibold tracking-tight">
+      <div className="w-full max-w-sm rounded-2xl border border-zinc-800 bg-zinc-900/70 p-6 shadow-2xl shadow-black/40 backdrop-blur-md sm:p-8">
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-100">
           {isRegister ? 'Crea tu cuenta' : 'Bienvenido de nuevo'}
         </h1>
-        <p className="mt-1.5 text-sm text-ink-muted">
+        <p className="mt-1.5 text-sm text-zinc-400">
           {isRegister
             ? 'Registra tus salidas y sigue tu evolución.'
             : 'Entra para ver tus métricas y salidas.'}
@@ -75,8 +75,8 @@ export function AuthPage() {
 
           <FormError>{error}</FormError>
 
-          <Button type="submit" className="mt-2 w-full" disabled={submitting}>
-            {submitting ? 'Un momento…' : isRegister ? 'Crear cuenta' : 'Entrar'}
+          <Button type="submit" className="mt-2 w-full" loading={submitting}>
+            {isRegister ? 'Crear cuenta' : 'Entrar'}
           </Button>
         </form>
       </div>

@@ -9,6 +9,9 @@ const EMPTY = {
   elevationGain: '', avgHr: '', maxHr: '', notes: '',
 }
 
+// Etiqueta con unidad en minúsculas (las etiquetas van en mayúsculas)
+const withUnit = (label, unit) => <>{label} <span className="normal-case">({unit})</span></>
+
 const toNumber = (value) => (value === '' ? undefined : Number(value))
 
 // Valida en cliente con mensajes claros; el backend vuelve a validar todo
@@ -76,7 +79,7 @@ export function ActivityForm({ onCreated, onCancel }) {
       <Field label="Fecha">
         {(id) => <Input id={id} type="date" max={todayInput()} {...bind('date')} />}
       </Field>
-      <Field label="Distancia (km)">
+      <Field label={withUnit('Distancia', 'km')}>
         {(id) => <Input id={id} type="number" inputMode="decimal" min="0" step="0.01" placeholder="85,4" {...bind('distanceKm')} />}
       </Field>
       <Field label="Duración">
@@ -89,13 +92,13 @@ export function ActivityForm({ onCreated, onCancel }) {
           </div>
         )}
       </Field>
-      <Field label="Desnivel (m)">
+      <Field label={withUnit('Desnivel', 'm')}>
         {(id) => <Input id={id} type="number" inputMode="numeric" min="0" step="1" placeholder="Opcional" {...bind('elevationGain')} />}
       </Field>
-      <Field label="FC media (bpm)">
+      <Field label={withUnit('FC media', 'bpm')}>
         {(id) => <Input id={id} type="number" inputMode="numeric" min="40" max="220" step="1" placeholder="Opcional" {...bind('avgHr')} />}
       </Field>
-      <Field label="FC máxima (bpm)">
+      <Field label={withUnit('FC máxima', 'bpm')}>
         {(id) => <Input id={id} type="number" inputMode="numeric" min="40" max="220" step="1" placeholder="Opcional" {...bind('maxHr')} />}
       </Field>
       <Field label="Notas" className="col-span-2">
@@ -106,7 +109,7 @@ export function ActivityForm({ onCreated, onCancel }) {
 
       <div className="col-span-2 flex justify-end gap-2">
         <Button variant="ghost" onClick={onCancel} disabled={saving}>Cancelar</Button>
-        <Button type="submit" disabled={saving}>{saving ? 'Guardando…' : 'Guardar salida'}</Button>
+        <Button type="submit" loading={saving}>Guardar salida</Button>
       </div>
     </form>
   )

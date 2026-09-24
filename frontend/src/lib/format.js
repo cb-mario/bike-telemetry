@@ -21,11 +21,16 @@ const dateFmt = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short
 const shortDateFmt = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', timeZone: 'UTC' })
 const monthFmt = new Intl.DateTimeFormat('es-ES', { month: 'short', timeZone: 'UTC' })
 const monthYearFmt = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric', timeZone: 'UTC' })
+const monthNameFmt = new Intl.DateTimeFormat('es-ES', { month: 'long', timeZone: 'UTC' })
+
+const weekdayDateFmt = new Intl.DateTimeFormat('es-ES', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' })
 
 export const formatDate = (iso) => dateFmt.format(new Date(iso))
+export const formatWeekdayDate = (iso) => weekdayDateFmt.format(new Date(iso)).replaceAll('.', '')
 export const formatShortDate = (iso) => shortDateFmt.format(new Date(iso))
 export const formatMonth = (iso) => monthFmt.format(new Date(iso)).replace('.', '')
 export const formatMonthYear = (iso) => monthYearFmt.format(new Date(iso))
+export const formatMonthName = (iso) => monthNameFmt.format(new Date(iso))
 
 // Fecha local de hoy en formato YYYY-MM-DD (para <input type="date">)
 export function todayInput() {

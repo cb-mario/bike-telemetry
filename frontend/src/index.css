@@ -5,9 +5,9 @@
 
   /* Superficies y tinta (modo oscuro) */
   --color-surface: #09090b;
-  --color-ink: #fafafa;
-  --color-ink-secondary: #a1a1aa;
-  --color-ink-muted: #71717a;
+  --color-ink: #f4f4f5;          /* zinc-100: cifras y texto principal */
+  --color-ink-secondary: #a1a1aa; /* zinc-400: etiquetas */
+  --color-ink-muted: #71717a;     /* zinc-500: texto terciario */
 
   /* Datos: serie única y rampa ordinal de zonas de pulso (validadas sobre #09090b) */
   --color-series: #3987e5;
@@ -27,8 +27,27 @@
   }
   body {
     @apply bg-surface text-ink font-sans antialiased;
+    /* Resplandor muy sutil para que el desenfoque de las tarjetas tenga algo detrás */
+    background-image:
+      radial-gradient(60rem 30rem at 50% -10rem, rgb(57 135 229 / 0.07), transparent 70%),
+      radial-gradient(40rem 24rem at 100% 40rem, rgb(161 161 170 / 0.04), transparent 70%);
+    background-attachment: fixed;
   }
   ::selection {
     @apply bg-series/30;
+  }
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::backdrop {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }

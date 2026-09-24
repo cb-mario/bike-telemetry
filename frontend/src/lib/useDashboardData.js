@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { api } from './api'
 import { rangeQuery } from './ranges'
 
-const PAGE_SIZE = 10
+// Múltiplo de 2 y 3 para completar las filas del grid de salidas
+const PAGE_SIZE = 12
 
 // Carga todo lo que depende del rango. Mientras recarga, conserva los datos anteriores
 export function useDashboardData(range, refreshKey) {
