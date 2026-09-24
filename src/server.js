@@ -3,7 +3,13 @@ require('dotenv').config({ quiet: true });
 const express = require('express');
 const cors = require('cors');
 
+if (!process.env.JWT_SECRET) {
+  console.error('Falta la variable de entorno JWT_SECRET (ver .env.example)');
+  process.exit(1);
+}
+
 const healthRoutes = require('./routes/health.routes');
+const authRoutes = require('./routes/auth.routes');
 const { notFound, errorHandler } = require('./middlewares/errorHandler');
 
 const app = express();
@@ -16,6 +22,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Rutas
 app.use('/api/health', healthRoutes);
+app.use('/api/auth', authRoutes);
 
 // 404 y errores (siempre al final)
 app.use(notFound);
