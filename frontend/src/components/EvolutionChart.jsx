@@ -6,9 +6,10 @@ import { useElementSize } from '../lib/useElementSize'
 import { formatDate, formatDuration, formatKm, formatMonth, formatMonthYear, formatNumber, formatShortDate } from '../lib/format'
 
 const METRICS = [
-  { value: 'distanceKm', label: 'Distancia', unit: 'km', format: (v) => formatKm(v) },
-  { value: 'elevationGain', label: 'Desnivel', unit: 'm', format: (v) => `${formatNumber(v)} m` },
-  { value: 'durationMin', label: 'Tiempo', unit: 'h', format: (v) => formatDuration(v), scale: (v) => v / 60 },
+  // fill: acento del dato (azul distancia, ámbar desnivel)
+  { value: 'distanceKm', label: 'Distancia', unit: 'km', fill: 'fill-dist', format: (v) => formatKm(v) },
+  { value: 'elevationGain', label: 'Desnivel', unit: 'm', fill: 'fill-elev', format: (v) => `${formatNumber(v)} m` },
+  { value: 'durationMin', label: 'Tiempo', unit: 'h', fill: 'fill-dist', format: (v) => formatDuration(v), scale: (v) => v / 60 },
 ]
 
 const VIEWS = [
@@ -139,7 +140,7 @@ function Columns({ buckets, period, metric }) {
               <g key={b.periodStart}>
                 {v > 0 && (
                   <path d={columnPath(x, y(v), barW, h)}
-                    className={`transition-colors ${active === i ? 'fill-zone-4' : 'fill-series'}`} />
+                    className={`${metric.fill} transition-[filter] duration-150 ${active === i ? 'brightness-130' : ''}`} />
                 )}
                 {i % labelEvery === 0 && (
                   <text x={xCenter(i)} y={HEIGHT - 8} textAnchor="middle" className="fill-ink-muted text-[11px]">

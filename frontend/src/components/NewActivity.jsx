@@ -13,8 +13,8 @@ const MODES = [
 ]
 
 // Contenido del modal "Nueva salida": importación GPX (por defecto) o formulario manual
-export function NewActivity({ initialFile, onCreated, onClose }) {
-  const [mode, setMode] = useState('gpx')
+export function NewActivity({ initialMode = 'gpx', initialFile, onCreated, onClose }) {
+  const [mode, setMode] = useState(initialMode)
   const [imported, setImported] = useState(null)
   // El archivo soltado sobre el dashboard se usa una sola vez (no al volver a esta vista)
   const [pendingFile, setPendingFile] = useState(initialFile)

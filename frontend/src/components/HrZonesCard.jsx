@@ -5,7 +5,7 @@ import { Input } from './ui/Field'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import { formatDuration, formatKm, formatNumber } from '../lib/format'
-// Rampa ordinal: más intensidad → azul más claro (validada sobre las tarjetas)
+// Un tono por zona, de frío a cálido (validado para daltonismo sobre las tarjetas)
 import { ZONE_BG } from '../lib/zones'
 
 

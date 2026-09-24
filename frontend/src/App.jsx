@@ -1,6 +1,12 @@
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 import { useAuth } from './context/AuthContext'
+import { AppProvider } from './context/AppContext'
 import { AuthPage } from './pages/AuthPage'
-import { DashboardPage } from './pages/DashboardPage'
+import { AppShell } from './components/AppShell'
+import { SummaryPage } from './pages/SummaryPage'
+import { RoutesPage } from './pages/RoutesPage'
+import { ExplorerPage } from './pages/ExplorerPage'
+import { ActivityDetailPage } from './pages/ActivityDetailPage'
 
 export default function App() {
   const { user, loading } = useAuth()
@@ -12,5 +18,21 @@ export default function App() {
       </div>
     )
   }
-  return user ? <DashboardPage /> : <AuthPage />
+  if (!user) return <AuthPage />
+
+  return (
+    <BrowserRouter>
+      <AppProvider>
+        <Routes>
+          <Route element={<AppShell />}>
+            <Route index element={<SummaryPage />} />
+            <Route path="rutas" element={<RoutesPage />} />
+            <Route path="rutas/:id" element={<ActivityDetailPage />} />
+            <Route path="explorar" element={<ExplorerPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
+      </AppProvider>
+    </BrowserRouter>
+  )
 }

@@ -5,6 +5,7 @@ const VARIANTS = {
   secondary: 'border border-zinc-800 bg-zinc-900/70 text-zinc-100 hover:border-zinc-700 hover:bg-zinc-800/80',
   ghost: 'text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-100',
   danger: 'text-critical hover:bg-critical/10',
+  strava: 'bg-strava text-white shadow-sm hover:bg-[#ff5d1a] hover:shadow-md hover:shadow-strava/25',
 }
 
 const SIZES = {

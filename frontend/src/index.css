@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
 @theme {
   --font-sans: system-ui, -apple-system, "SF Pro Text", "Segoe UI", sans-serif;
@@ -9,13 +10,21 @@
   --color-ink-secondary: #a1a1aa; /* zinc-400: etiquetas */
   --color-ink-muted: #71717a;     /* zinc-500: texto terciario */
 
-  /* Datos: serie única y rampa ordinal de zonas de pulso (validadas sobre #09090b) */
-  --color-series: #3987e5;
-  --color-zone-1: #184f95;
-  --color-zone-2: #256abf;
-  --color-zone-3: #3987e5;
-  --color-zone-4: #6da7ec;
-  --color-zone-5: #9ec5f4;
+  /* Acentos de datos técnicos (tinta de marcas e iconos, nunca de texto) */
+  --color-series: #3987e5;  /* distancia y velocidad: azul eléctrico */
+  --color-dist: #3987e5;
+  --color-elev: #c98500;    /* desnivel: ámbar */
+  --color-hr: #e66767;      /* pulsaciones: coral */
+
+  /* Zonas de pulso: 5 tonos distintos de frío a cálido. Validados para daltonismo
+     (pares adyacentes) sobre las tarjetas; siempre acompañados de la etiqueta Z1…Z5 */
+  --color-zone-1: #3987e5;
+  --color-zone-2: #199e70;
+  --color-zone-3: #c98500;
+  --color-zone-4: #d55181;
+  --color-zone-5: #9085e9;
+
+  --color-strava: #fc4c02;
 
   /* Estado (solo con icono o texto, nunca color solo) */
   --color-critical: #e66767;
@@ -50,4 +59,39 @@
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Leaflet en modo oscuro: controles y atribución acordes al resto de la interfaz */
+.leaflet-container {
+  background: #09090b;
+  font-family: var(--font-sans);
+}
+.leaflet-bar a,
+.leaflet-bar a:hover {
+  background: rgb(24 24 27 / 0.9);
+  color: #f4f4f5;
+  border-color: #27272a;
+}
+.leaflet-bar {
+  border: 1px solid #27272a !important;
+  border-radius: 0.5rem !important;
+  overflow: hidden;
+}
+.leaflet-control-attribution {
+  background: rgb(9 9 11 / 0.7) !important;
+  color: #71717a !important;
+}
+.leaflet-control-attribution a {
+  color: #a1a1aa !important;
+}
+.leaflet-tooltip.route-tooltip {
+  background: rgb(9 9 11 / 0.95);
+  border: 1px solid #3f3f46;
+  border-radius: 0.5rem;
+  color: #f4f4f5;
+  box-shadow: 0 10px 25px rgb(0 0 0 / 0.4);
+  padding: 0.5rem 0.75rem;
+}
+.leaflet-tooltip.route-tooltip::before {
+  display: none;
 }

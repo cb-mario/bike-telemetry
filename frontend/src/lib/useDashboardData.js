@@ -1,11 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api } from './api'
 import { rangeQuery } from './ranges'
 
-// Múltiplo de 2 y 3 para completar las filas del grid de salidas
-const PAGE_SIZE = 12
-
-// Carga todo lo que depende del rango. Mientras recarga, conserva los datos anteriores
+// Datos del Resumen que dependen del rango. Mientras recarga, conserva los datos anteriores
 export function useDashboardData(range, refreshKey) {
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
@@ -22,11 +19,10 @@ export function useDashboardData(range, refreshKey) {
       api('/stats/summary', { query: { from } }),
       api('/stats/evolution', { query: { from, period } }),
       api('/stats/hr-zones', { query: { from } }),
-      api('/activities', { query: { from, limit: PAGE_SIZE } }),
     ])
-      .then(([summary, evolution, zones, activities]) => {
+      .then(([summary, evolution, zones]) => {
         if (cancelled) return
-        setData({ summary, evolution, zones, activities, from })
+        setData({ summary, evolution, zones })
         setError('')
       })
       .catch((err) => !cancelled && setError(err.message))
@@ -37,16 +33,5 @@ export function useDashboardData(range, refreshKey) {
     }
   }, [range, refreshKey])
 
-  const loadMoreActivities = useCallback(async () => {
-    if (!data) return
-    const page = await api('/activities', {
-      query: { from: data.from, limit: PAGE_SIZE, offset: data.activities.data.length },
-    })
-    setData((prev) => ({
-      ...prev,
-      activities: { ...page, data: [...prev.activities.data, ...page.data] },
-    }))
-  }, [data])
-
-  return { data, loading, error, loadMoreActivities }
+  return { data, loading, error }
 }
