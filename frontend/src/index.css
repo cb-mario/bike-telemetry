@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: system-ui, -apple-system, "SF Pro Text", "Segoe UI", sans-serif;
+
+  /* Superficies y tinta (modo oscuro) */
+  --color-surface: #09090b;
+  --color-ink: #fafafa;
+  --color-ink-secondary: #a1a1aa;
+  --color-ink-muted: #71717a;
+
+  /* Datos: serie única y rampa ordinal de zonas de pulso (validadas sobre #09090b) */
+  --color-series: #3987e5;
+  --color-zone-1: #184f95;
+  --color-zone-2: #256abf;
+  --color-zone-3: #3987e5;
+  --color-zone-4: #6da7ec;
+  --color-zone-5: #9ec5f4;
+
+  /* Estado (solo con icono o texto, nunca color solo) */
+  --color-critical: #e66767;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-surface text-ink font-sans antialiased;
+  }
+  ::selection {
+    @apply bg-series/30;
+  }
+}
