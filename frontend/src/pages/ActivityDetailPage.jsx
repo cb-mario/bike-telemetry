@@ -40,6 +40,20 @@ export function ActivityDetailPage() {
   const [hover, setHover] = useState({ index: null, point: null })
   const [confirming, setConfirming] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [repeating, setRepeating] = useState(false)
+
+  // Convierte la salida en una ruta planificada para editarla o exportarla
+  async function handleRepeat() {
+    setRepeating(true)
+    try {
+      const route = await api(`/planned-routes/from-activity/${id}`, { method: 'POST' })
+      toast(`Ruta "${route.name}" creada a partir de esta salida.`, 'success')
+      navigate(`/rutas/${route.id}`)
+    } catch (err) {
+      toast(err.message, 'error')
+      setRepeating(false)
+    }
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -77,7 +91,7 @@ export function ActivityDetailPage() {
       await api(`/activities/${id}`, { method: 'DELETE' })
       refresh()
       toast('Salida borrada.', 'success')
-      navigate('/rutas')
+      navigate('/salidas')
     } catch (err) {
       toast(err.message, 'error')
       setDeleting(false)
@@ -88,7 +102,7 @@ export function ActivityDetailPage() {
     return (
       <main className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-10 sm:px-6">
         <FormError>{error}</FormError>
-        <Link to="/rutas" className="text-sm text-zinc-400 hover:text-zinc-100">← Volver a Mis rutas</Link>
+        <Link to="/salidas" className="text-sm text-zinc-400 hover:text-zinc-100">← Volver a Salidas</Link>
       </main>
     )
   }
@@ -103,7 +117,7 @@ export function ActivityDetailPage() {
 
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10 sm:px-6">
-      <Link to="/rutas" className="self-start text-sm text-zinc-400 transition-colors hover:text-zinc-100">← Mis rutas</Link>
+      <Link to="/salidas" className="self-start text-sm text-zinc-400 transition-colors hover:text-zinc-100">← Salidas</Link>
 
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
@@ -114,9 +128,16 @@ export function ActivityDetailPage() {
           <h1 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-100">{a.title}</h1>
           <p className="mt-1.5 text-sm text-zinc-400">{formatDate(a.date)}</p>
         </div>
-        <Button variant={confirming ? 'danger' : 'ghost'} onClick={handleDelete} loading={deleting}>
-          {confirming ? '¿Borrar definitivamente?' : 'Borrar salida'}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant={confirming ? 'danger' : 'ghost'} onClick={handleDelete} loading={deleting}>
+            {confirming ? '¿Borrar definitivamente?' : 'Borrar salida'}
+          </Button>
+          {segments && (
+            <Button variant="secondary" onClick={handleRepeat} loading={repeating}>
+              Repetir esta ruta
+            </Button>
+          )}
+        </div>
       </div>
 
       {segments ? (

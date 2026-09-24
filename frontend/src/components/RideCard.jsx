@@ -30,7 +30,7 @@ export function RideCard({ ride: r, zones }) {
   const zone = zoneFor(r.avgHr, zones)
   return (
     <Card as="li" className="group overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:border-zinc-700 hover:shadow-xl hover:shadow-black/40">
-      <Link to={`/rutas/${r.id}`} className="flex h-full flex-col outline-none focus-visible:ring-2 focus-visible:ring-series/60">
+      <Link to={`/salidas/${r.id}`} className="flex h-full flex-col outline-none focus-visible:ring-2 focus-visible:ring-series/60">
         {/* Miniatura del trazado sobre una retícula tenue, como un mini-mapa */}
         <div className="relative h-32 border-b border-zinc-800 bg-zinc-950/60 bg-[linear-gradient(rgb(39_39_42/0.35)_1px,transparent_1px),linear-gradient(90deg,rgb(39_39_42/0.35)_1px,transparent_1px)] bg-[size:16px_16px]">
           {r.routePreview ? (

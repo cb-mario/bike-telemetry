@@ -14,7 +14,7 @@ import { RouteFilters } from '../components/RouteFilters'
 import { EMPTY_FILTERS, filtersToQuery, hasActiveFilters } from '../lib/routeFilters'
 import { StravaControls } from '../components/StravaControls'
 
-export function RoutesPage() {
+export function RidesPage() {
   const { refreshKey, openNewActivity, toast } = useApp()
   const [searchParams, setSearchParams] = useSearchParams()
   const [filters, setFilters] = useState(EMPTY_FILTERS)
@@ -51,10 +51,11 @@ export function RoutesPage() {
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-10 sm:px-6">
       <PageHeader
-        title="Mis rutas"
-        description={page ? `${formatNumber(page.total)} ${page.total === 1 ? 'salida' : 'salidas'}${hasActiveFilters(filters) ? ' con estos filtros' : ''}` : 'Tus salidas registradas'}
+        title="Salidas"
+        description={page ? `${formatNumber(page.total)} ${page.total === 1 ? 'salida realizada' : 'salidas realizadas'}${hasActiveFilters(filters) ? ' con estos filtros' : ''}` : 'Lo que ya has rodado'}
         action={
           <>
+            <Button variant="ghost" onClick={() => openNewActivity('manual')}>Añadir manual</Button>
             <Button variant="secondary" onClick={() => openNewActivity('gpx')}>
               <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                 <path d="M12 16V4m0 0-4 4m4-4 4 4M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />

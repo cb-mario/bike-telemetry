@@ -34,3 +34,18 @@ export async function downloadGpx(id) {
   link.remove()
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
+
+// Importa un GPX (con o sin tiempos) como ruta planificada
+export function importRouteGpx(file) {
+  const form = new FormData()
+  form.append('file', file)
+  return api('/planned-routes/import-gpx', { method: 'POST', body: form })
+}
+
+// ¿Es una salida grabada (puntos con <time>) o un recorrido planificado (sin tiempos)?
+export async function gpxHasTimes(file) {
+  // Basta con mirar el principio del archivo: el primer punto del track
+  const head = await file.slice(0, 512 * 1024).text()
+  const firstPoint = /<trkpt\b[\s\S]*?<\/trkpt>/i.exec(head)?.[0] ?? ''
+  return /<time>/i.test(firstPoint)
+}

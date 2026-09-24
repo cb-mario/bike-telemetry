@@ -10,7 +10,9 @@ export function DropOverlay() {
         </div>
         <div>
           <p className="text-lg font-semibold tracking-tight text-zinc-100">Suelta tu archivo GPX</p>
-          <p className="mt-1 text-sm text-zinc-400">Se importará como una nueva salida</p>
+          <p className="mt-1 text-sm text-zinc-400">
+            Con tiempos se guarda como salida; sin ellos, como ruta planificada
+          </p>
         </div>
       </div>
     </div>

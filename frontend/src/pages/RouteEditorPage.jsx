@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router'
 import { CircleMarker, Polyline, useMapEvents } from 'react-leaflet'
 import { useApp } from '../context/AppContext'
 import { api } from '../lib/api'
 import { formatDuration, formatNumber } from '../lib/format'
 import { boundsOf } from '../lib/geo'
-import { ROUTING_OPTIONS, deletePlannedRoute, downloadGpx, getPlannedRoute, listPlannedRoutes, savePlannedRoute } from '../lib/planner'
+import { ROUTING_OPTIONS, downloadGpx, getPlannedRoute, savePlannedRoute } from '../lib/planner'
 import { elevationGain, lengthKm, withDistance } from '../lib/track'
 import { useRouteLegs } from '../lib/useRouteLegs'
 import { BaseMap } from '../components/map/BaseMap'
 import { WaypointMarkers } from '../components/planner/WaypointMarkers'
-import { PanelSection, SavedRoutes } from '../components/planner/SavedRoutes'
+import { PanelSection } from '../components/planner/PanelSection'
 import { ElevationProfile } from '../components/ElevationProfile'
 import { Button } from '../components/ui/Button'
 import { SegmentedControl } from '../components/ui/SegmentedControl'
@@ -39,14 +40,17 @@ function Stat({ label, value, unit, accent }) {
   )
 }
 
-export function PlannerPage() {
+// Editor de una ruta planificada: /rutas/nueva o /rutas/:id
+export function RouteEditorPage() {
   const { toast } = useApp()
+  const navigate = useNavigate()
+  const { id: routeParam } = useParams()
+  const routeId = routeParam ? Number(routeParam) : null
   const [waypoints, setWaypoints] = useState([])
   const [routing, setRouting] = useState('road')
   const [name, setName] = useState('')
   const [editingId, setEditingId] = useState(null)
   const [dirty, setDirty] = useState(false)
-  const [saved, setSaved] = useState(null)
   const [saving, setSaving] = useState(false)
   const [busyId, setBusyId] = useState(null)
   const [showRides, setShowRides] = useState(false)
@@ -56,6 +60,7 @@ export function PlannerPage() {
   const [fitTo, setFitTo] = useState(null)
   // Trazado de la ruta guardada abierta: se muestra tal cual hasta que se modifique
   const [openedGeometry, setOpenedGeometry] = useState(null)
+  const [loadingRoute, setLoadingRoute] = useState(Boolean(routeId))
 
   const legs = useRouteLegs(waypoints, openedGeometry ? 'straight' : routing)
   const geometry = openedGeometry ?? legs.geometry
@@ -67,7 +72,6 @@ export function PlannerPage() {
   const hasElevation = geometry.filter((c) => c[2] != null).length > 1
 
   useEffect(() => {
-    listPlannedRoutes().then(setSaved).catch(() => setSaved([]))
     // Velocidad media histórica para estimar el tiempo de la ruta
     api('/stats/summary').then((s) => setAvgSpeed(s.avgSpeedKmh)).catch(() => {})
     // Encuadre inicial: la zona donde sueles rodar (sin salidas virtuales), para marcar puntos con buen zoom
@@ -100,20 +104,39 @@ export function PlannerPage() {
     setDirty(false)
   }
 
-  async function open(id) {
-    try {
-      const route = await getPlannedRoute(id)
-      setWaypoints(route.waypoints.map(([lat, lon]) => waypoint(lat, lon)))
-      setRouting(route.routing)
-      setOpenedGeometry(route.geometry)
-      setName(route.name)
-      setEditingId(route.id)
-      setDirty(false)
-      setFitTo(boundsOf(route.geometry))
-    } catch (err) {
-      toast(err.message, 'error')
-    }
+  // Al pasar de una ruta a /rutas/nueva, el editor se vacía (ajuste durante el render)
+  const [prevRouteId, setPrevRouteId] = useState(routeId)
+  if (routeId !== prevRouteId) {
+    setPrevRouteId(routeId)
+    if (!routeId) reset()
+    else if (routeId !== editingId) setLoadingRoute(true)
   }
+
+  // Carga la ruta de la URL (salvo si es la que se acaba de guardar desde este editor)
+  useEffect(() => {
+    if (!routeId || routeId === editingId) return
+    let cancelled = false
+    getPlannedRoute(routeId)
+      .then((route) => {
+        if (cancelled) return
+        setWaypoints(route.waypoints.map(([lat, lon]) => waypoint(lat, lon)))
+        setRouting(route.routing)
+        setOpenedGeometry(route.geometry)
+        setName(route.name)
+        setEditingId(route.id)
+        setDirty(false)
+        setFitTo(boundsOf(route.geometry))
+      })
+      .catch((err) => {
+        if (cancelled) return
+        toast(err.message, 'error')
+        navigate('/rutas', { replace: true })
+      })
+      .finally(() => !cancelled && setLoadingRoute(false))
+    return () => {
+      cancelled = true
+    }
+  }, [routeId, editingId, navigate, toast])
 
   async function save() {
     const routeName = name.trim() || `Ruta de ${formatNumber(distance, 0)} km`
@@ -128,7 +151,7 @@ export function PlannerPage() {
       setEditingId(route.id)
       setName(route.name)
       setDirty(false)
-      setSaved(await listPlannedRoutes())
+      if (route.id !== routeId) navigate(`/rutas/${route.id}`, { replace: true })
       toast(`Ruta "${route.name}" guardada.`, 'success')
       return route
     } catch (err) {
@@ -154,17 +177,6 @@ export function PlannerPage() {
   async function downloadCurrent() {
     const id = dirty || !editingId ? (await save())?.id : editingId
     if (id) await download(id)
-  }
-
-  async function removeSaved(id) {
-    try {
-      await deletePlannedRoute(id)
-      setSaved((list) => list.filter((r) => r.id !== id))
-      if (id === editingId) reset()
-      toast('Ruta borrada.', 'success')
-    } catch (err) {
-      toast(err.message, 'error')
-    }
   }
 
   const eta = avgSpeed && distance ? Math.round((distance / avgSpeed) * 60) : null
@@ -197,9 +209,14 @@ export function PlannerPage() {
       <aside className="z-[500] flex flex-col gap-4 border-t border-zinc-800 bg-zinc-900/80 p-4 backdrop-blur-md
         lg:absolute lg:top-4 lg:left-4 lg:max-h-[calc(100%-2rem)] lg:w-[23rem] lg:overflow-y-auto lg:rounded-2xl lg:border lg:shadow-2xl lg:shadow-black/40">
         <div className="flex items-center justify-between gap-3">
-          <h1 className="text-lg font-semibold tracking-tight text-zinc-100">Planificador</h1>
+          <div>
+            <Link to="/rutas" className="text-xs text-zinc-400 transition-colors hover:text-zinc-100">← Rutas</Link>
+            <h1 className="mt-1 text-lg font-semibold tracking-tight text-zinc-100">
+              {editingId ? 'Editar ruta' : 'Nueva ruta'}
+            </h1>
+          </div>
           {(waypoints.length > 0 || editingId) && (
-            <Button variant="ghost" size="sm" onClick={reset}>Nueva ruta</Button>
+            <Button variant="ghost" size="sm" onClick={() => { reset(); navigate('/rutas/nueva') }}>Empezar otra</Button>
           )}
         </div>
 
@@ -216,7 +233,9 @@ export function PlannerPage() {
             onChange={(v) => { setRouting(v); setOpenedGeometry(null); setDirty(true) }} />
         </div>
 
-        {waypoints.length === 0 ? (
+        {loadingRoute ? (
+          <div className="h-40 animate-pulse rounded-xl bg-zinc-800/40" aria-busy="true" aria-label="Cargando ruta" />
+        ) : waypoints.length === 0 ? (
           <p className="rounded-xl border border-dashed border-zinc-700 px-4 py-5 text-center text-sm text-zinc-400">
             Toca el mapa para marcar el inicio y sigue añadiendo puntos. La ruta se ajusta a las vías automáticamente.
           </p>
@@ -259,10 +278,6 @@ export function PlannerPage() {
             </p>
           </>
         )}
-
-        <PanelSection title="Rutas guardadas">
-          <SavedRoutes routes={saved} activeId={editingId} onOpen={open} onDownload={download} onDelete={removeSaved} busyId={busyId} />
-        </PanelSection>
 
         <PanelSection title="Capas">
           <label className="flex cursor-pointer items-center justify-between gap-3 text-sm text-zinc-300">

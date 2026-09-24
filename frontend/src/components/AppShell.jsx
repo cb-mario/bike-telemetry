@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router'
+import { NavLink, Outlet, useNavigate } from 'react-router'
 import { useAuth } from '../context/AuthContext'
 import { useApp } from '../context/AppContext'
 import { Button } from './ui/Button'
@@ -8,11 +8,12 @@ import { NewActivity } from './NewActivity'
 import { Toaster } from './Toaster'
 import { DropOverlay } from './FileDrop'
 import { useWindowFileDrag } from '../lib/useWindowFileDrag'
+import { gpxHasTimes, importRouteGpx } from '../lib/planner'
 
 const SECTIONS = [
   { to: '/', label: 'Resumen', icon: 'M4 13h4v7H4zM10 4h4v16h-4zM16 9h4v11h-4z', end: true },
-  { to: '/rutas', label: 'Mis rutas', icon: 'M4 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm16-10a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM6 17h7a3 3 0 0 0 0-6h-2a3 3 0 0 1 0-6h7' },
-  { to: '/planificador', label: 'Planificador', icon: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Zm0 0v14m6-12v14' },
+  { to: '/salidas', label: 'Salidas', icon: 'M5 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm14 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM5 15l4-7h5l5 7M9 8l3 7h-7M12 5h3' },
+  { to: '/rutas', label: 'Rutas', icon: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Zm0 0v14m6-12v14' },
 ]
 
 function Icon({ d, className = 'size-4' }) {
@@ -27,8 +28,22 @@ function Icon({ d, className = 'size-4' }) {
 // Estructura común: navegación fija (arriba en escritorio, abajo en móvil), modal y avisos
 export function AppShell() {
   const { user, logout } = useAuth()
-  const { dialog, openNewActivity, closeNewActivity, refresh } = useApp()
-  const fileDragging = useWindowFileDrag(!dialog, (file) => openNewActivity('gpx', file))
+  const { dialog, openNewActivity, closeNewActivity, refresh, toast } = useApp()
+  const navigate = useNavigate()
+
+  // GPX soltado sobre la app: con tiempos es una salida grabada; sin tiempos, una ruta planificada
+  async function handleDroppedFile(file) {
+    if (!/\.gpx$/i.test(file.name)) return toast('Solo se admiten archivos .gpx', 'error')
+    if (await gpxHasTimes(file)) return openNewActivity('gpx', file)
+    try {
+      const route = await importRouteGpx(file)
+      toast(`Ruta "${route.name}" importada en Rutas.`, 'success')
+      navigate(`/rutas/${route.id}`)
+    } catch (err) {
+      toast(err.message, 'error')
+    }
+  }
+  const fileDragging = useWindowFileDrag(!dialog, handleDroppedFile)
 
   return (
     <div className="min-h-svh pb-20 sm:pb-0">

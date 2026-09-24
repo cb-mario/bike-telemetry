@@ -4,8 +4,9 @@ import { AppProvider } from './context/AppContext'
 import { AuthPage } from './pages/AuthPage'
 import { AppShell } from './components/AppShell'
 import { SummaryPage } from './pages/SummaryPage'
-import { RoutesPage } from './pages/RoutesPage'
-import { PlannerPage } from './pages/PlannerPage'
+import { RidesPage } from './pages/RidesPage'
+import { RoutesLibraryPage } from './pages/RoutesLibraryPage'
+import { RouteEditorPage } from './pages/RouteEditorPage'
 import { ActivityDetailPage } from './pages/ActivityDetailPage'
 
 export default function App() {
@@ -26,10 +27,16 @@ export default function App() {
         <Routes>
           <Route element={<AppShell />}>
             <Route index element={<SummaryPage />} />
-            <Route path="rutas" element={<RoutesPage />} />
-            <Route path="rutas/:id" element={<ActivityDetailPage />} />
-            <Route path="planificador" element={<PlannerPage />} />
-            <Route path="explorar" element={<Navigate to="/planificador" replace />} />
+            {/* Salidas: lo que ya has rodado */}
+            <Route path="salidas" element={<RidesPage />} />
+            <Route path="salidas/:id" element={<ActivityDetailPage />} />
+            {/* Rutas: lo que quieres rodar */}
+            <Route path="rutas" element={<RoutesLibraryPage />} />
+            <Route path="rutas/nueva" element={<RouteEditorPage />} />
+            <Route path="rutas/:id" element={<RouteEditorPage />} />
+            {/* Direcciones antiguas */}
+            <Route path="planificador" element={<Navigate to="/rutas" replace />} />
+            <Route path="explorar" element={<Navigate to="/rutas" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
