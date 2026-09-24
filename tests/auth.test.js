@@ -111,6 +111,9 @@ describe('Auth', () => {
       const token = await registerUser('rider@test.local');
       await resetDb();
       assert.equal((await me(token)).status, 404);
+
+      const res = await request(app).patch('/api/auth/me').set('Authorization', `Bearer ${token}`).send({ maxHr: 180 });
+      assert.equal(res.status, 404);
     });
   });
 });

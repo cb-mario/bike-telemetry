@@ -1,6 +1,7 @@
 const authService = require('../services/auth.service');
 const User = require('../models/user.model');
 const { HttpError } = require('../middlewares/errorHandler');
+const { parseNumber } = require('../utils/validation');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 8;
@@ -51,4 +52,25 @@ async function me(req, res) {
   res.json({ user });
 }
 
-module.exports = { register, login, me };
+// Actualiza el perfil: por ahora solo maxHr (null para borrarlo)
+async function updateMe(req, res) {
+  const body = req.body || {};
+  const unknown = Object.keys(body).filter((key) => key !== 'maxHr');
+  if (unknown.length) throw new HttpError(400, `Campos no permitidos: ${unknown.join(', ')}`);
+  if (body.maxHr === undefined) throw new HttpError(400, 'No hay campos para actualizar');
+
+  const maxHr = body.maxHr === null
+    ? null
+    : parseNumber(body.maxHr, 'maxHr', { min: 100, max: 220, integer: true });
+
+  try {
+    const user = await User.updateProfile(req.user.id, { maxHr });
+    res.json({ user });
+  } catch (err) {
+    // Token válido de un usuario que ya no existe
+    if (err.code === 'P2025') throw new HttpError(404, 'Usuario no encontrado');
+    throw err;
+  }
+}
+
+module.exports = { register, login, me, updateMe };

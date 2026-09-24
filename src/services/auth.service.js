@@ -49,8 +49,8 @@ async function login(email, password) {
     throw new HttpError(401, 'Credenciales inválidas');
   }
 
-  const { id, createdAt } = user;
-  return { user: { id, email: user.email, createdAt }, token: signToken(user) };
+  const { id, maxHr, createdAt } = user;
+  return { user: { id, email: user.email, maxHr, createdAt }, token: signToken(user) };
 }
 
 module.exports = { register, login, verifyToken };

@@ -40,4 +40,22 @@ function remove(id) {
   return prisma.activity.delete({ where: { id } });
 }
 
-module.exports = { findManyByUser, countByUser, findByIdForUser, create, update, remove };
+// Campos necesarios para calcular estadísticas, en orden cronológico
+function findForStats({ userId, from, to }) {
+  return prisma.activity.findMany({
+    where: buildWhere({ userId, from, to }),
+    orderBy: { date: 'asc' },
+    select: {
+      id: true, title: true, date: true, distanceKm: true, durationMin: true,
+      elevationGain: true, avgHr: true, maxHr: true,
+    },
+  });
+}
+
+// FC máxima registrada en cualquier actividad del usuario
+async function maxRecordedHr(userId) {
+  const result = await prisma.activity.aggregate({ where: { userId }, _max: { maxHr: true } });
+  return result._max.maxHr;
+}
+
+module.exports = { findForStats, maxRecordedHr, findManyByUser, countByUser, findByIdForUser, create, update, remove };
