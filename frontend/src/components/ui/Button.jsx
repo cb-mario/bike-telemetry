@@ -1,8 +1,8 @@
 import { Spinner } from './Spinner'
 
 const VARIANTS = {
-  primary: 'bg-zinc-100 text-zinc-900 shadow-sm hover:bg-white hover:shadow-md hover:shadow-white/5',
-  secondary: 'border border-zinc-800 bg-zinc-900/70 text-zinc-100 hover:border-zinc-700 hover:bg-zinc-800/80',
+  primary: 'bg-linear-to-r from-brand to-brand-2 text-white shadow-lg shadow-brand/25 hover:-translate-y-px hover:shadow-xl hover:shadow-brand/35 hover:brightness-110',
+  secondary: 'border border-zinc-700/70 bg-zinc-900/70 text-zinc-100 backdrop-blur-md hover:border-brand/50 hover:bg-zinc-800/80',
   ghost: 'text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-100',
   danger: 'text-critical hover:bg-critical/10',
   strava: 'bg-strava text-white shadow-sm hover:bg-[#ff5d1a] hover:shadow-md hover:shadow-strava/25',

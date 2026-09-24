@@ -3,6 +3,7 @@ import { Card, CardHeader } from './ui/Card'
 import { SegmentedControl } from './ui/SegmentedControl'
 import { Label } from './ui/Text'
 import { useElementSize } from '../lib/useElementSize'
+import { THEME } from '../lib/theme'
 import { formatDate, formatDuration, formatKm, formatMonth, formatMonthYear, formatNumber, formatShortDate } from '../lib/format'
 
 const METRICS = [
@@ -121,7 +122,7 @@ function Columns({ buckets, period, metric }) {
           {ticks.map((t) => (
             <g key={t}>
               <line x1={MARGIN.left} x2={width - MARGIN.right} y1={y(t)} y2={y(t)}
-                stroke={t === 0 ? '#52525b' : '#27272a'} strokeWidth="1" shapeRendering="crispEdges" />
+                stroke={t === 0 ? THEME.baseline : THEME.grid} strokeWidth="1" shapeRendering="crispEdges" />
               <text x={MARGIN.left - 8} y={y(t)} dy="0.32em" textAnchor="end"
                 className="fill-ink-muted text-[11px] tabular-nums">
                 {formatNumber(t, step < 1 ? 1 : 0)}
@@ -139,8 +140,8 @@ function Columns({ buckets, period, metric }) {
             return (
               <g key={b.periodStart}>
                 {v > 0 && (
-                  <path d={columnPath(x, y(v), barW, h)}
-                    className={`${metric.fill} transition-[filter] duration-150 ${active === i ? 'brightness-130' : ''}`} />
+                  <path key={`${metric.value}-${b.periodStart}`} d={columnPath(x, y(v), barW, h)} style={{ animationDelay: `${i * 30}ms` }}
+                    className={`grow-y ${metric.fill} transition-[filter] duration-150 ${active === i ? 'brightness-130' : ''}`} />
                 )}
                 {i % labelEvery === 0 && (
                   <text x={xCenter(i)} y={HEIGHT - 8} textAnchor="middle" className="fill-ink-muted text-[11px]">

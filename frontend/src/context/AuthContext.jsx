@@ -22,8 +22,9 @@ export function AuthProvider({ children }) {
       .finally(() => setLoading(false))
   }, [logout])
 
-  const authenticate = useCallback(async (mode, email, password) => {
-    const { user, token } = await api(`/auth/${mode}`, { method: 'POST', body: { email, password } })
+  // profile: datos opcionales del registro por pasos (nombre, edad, altura…)
+  const authenticate = useCallback(async (mode, email, password, profile = {}) => {
+    const { user, token } = await api(`/auth/${mode}`, { method: 'POST', body: { email, password, ...profile } })
     tokenStorage.set(token)
     setUser(user)
   }, [])

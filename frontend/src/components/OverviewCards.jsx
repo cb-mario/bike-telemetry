@@ -1,6 +1,7 @@
 import { Card } from './ui/Card'
 import { Label, Metric } from './ui/Text'
 import { formatDuration, formatMonthName, formatNumber } from '../lib/format'
+import { useCountUp } from '../lib/useCountUp'
 
 const ICONS = {
   mountain: 'm3 20 6-11 4 6 2-3 6 8H3Z',
@@ -17,12 +18,19 @@ const ACCENTS = {
   neutral: 'bg-zinc-800 text-zinc-300',
 }
 
-function OverviewCard({ icon, accent, label, value, unit, sub }) {
+// Cifra que cuenta hacia arriba al aparecer
+function Animated({ value, decimals = 0 }) {
+  const current = useCountUp(value)
+  return current == null ? '—' : formatNumber(current, decimals)
+}
+
+function OverviewCard({ icon, accent, label, value, unit, sub, index }) {
   return (
-    <Card as="div" className="flex flex-col gap-4 p-5 transition-colors duration-200 hover:border-zinc-700">
+    <Card as="div" style={{ '--i': index }}
+      className="group flex flex-col gap-4 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-[0_18px_40px_-22px_rgb(59_130_246/0.6)]">
       <div className="flex items-center justify-between">
         <Label>{label}</Label>
-        <span className={`flex size-8 items-center justify-center rounded-lg ${ACCENTS[accent]}`}>
+        <span className={`flex size-8 items-center justify-center rounded-lg transition-transform duration-300 group-hover:scale-110 ${ACCENTS[accent]}`}>
           <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor"
             strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d={ICONS[icon]} />
@@ -42,27 +50,27 @@ export function OverviewCards({ overview }) {
   const { total, month, monthStart } = overview
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <OverviewCard
+    <div className="stagger grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <OverviewCard index={0}
         icon="route" accent="dist" label="Km totales"
-        value={formatNumber(total.distanceKm, 1)} unit="km"
+        value={<Animated value={total.distanceKm} decimals={1} />} unit="km"
         sub={total.count
           ? `${total.count === 1 ? '1 salida' : `${formatNumber(total.count)} salidas`} · ${formatDuration(total.durationMin)}`
           : 'Aún no hay salidas'}
       />
-      <OverviewCard
+      <OverviewCard index={1}
         icon="heart" accent="hr" label="FC media"
-        value={formatNumber(total.avgHr)} unit={total.avgHr != null ? 'bpm' : undefined}
+        value={<Animated value={total.avgHr} />} unit={total.avgHr != null ? 'bpm' : undefined}
         sub={total.maxHr != null ? `Máxima registrada ${total.maxHr} bpm` : 'Sin datos de pulso'}
       />
-      <OverviewCard
+      <OverviewCard index={2}
         icon="calendar" accent="neutral" label="Salidas del mes"
-        value={formatNumber(month.count)}
+        value={<Animated value={month.count} />}
         sub={`${formatNumber(month.distanceKm, 1)} km en ${formatMonthName(monthStart)}`}
       />
-      <OverviewCard
+      <OverviewCard index={3}
         icon="mountain" accent="elev" label="Desnivel acumulado"
-        value={formatNumber(total.elevationGain)} unit="m"
+        value={<Animated value={total.elevationGain} />} unit="m"
         sub={total.distanceKm ? `${formatNumber(total.elevationGain / total.distanceKm, 1)} m por km` : 'Aún no hay salidas'}
       />
     </div>

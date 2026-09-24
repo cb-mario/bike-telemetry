@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useElementSize } from '../lib/useElementSize'
 import { formatNumber } from '../lib/format'
 import { sample } from '../lib/track'
+import { THEME } from '../lib/theme'
 
 const DEFAULT_HEIGHT = 200
 const M = { top: 16, right: 12, bottom: 26, left: 44 }
@@ -60,7 +61,7 @@ export function ElevationProfile({ points, activeIndex, onActiveChange, height: 
           role="img" aria-label={`Perfil de altitud: de ${formatNumber(minEle)} a ${formatNumber(maxEle)} m a lo largo de ${formatNumber(maxKm, 1)} km`}>
           {ticks.map((t) => (
             <g key={t}>
-              <line x1={M.left} x2={width - M.right} y1={y(t)} y2={y(t)} stroke="#27272a" shapeRendering="crispEdges" />
+              <line x1={M.left} x2={width - M.right} y1={y(t)} y2={y(t)} stroke={THEME.grid} shapeRendering="crispEdges" />
               <text x={M.left - 8} y={y(t)} dy="0.32em" textAnchor="end" className="fill-zinc-500 text-[11px] tabular-nums">{formatNumber(t)}</text>
             </g>
           ))}
@@ -72,12 +73,12 @@ export function ElevationProfile({ points, activeIndex, onActiveChange, height: 
           <text x={M.left - 8} y={M.top - 6} textAnchor="end" className="fill-zinc-500 text-[11px]">m</text>
           <text x={width - M.right} y={HEIGHT - 6} textAnchor="end" className="fill-zinc-500 text-[11px]">km</text>
 
-          <path d={area} className="fill-elev/15" />
+          <path d={area} className="animate-fade-in fill-elev/20" />
           <path d={line} fill="none" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" className="stroke-elev" />
 
           {active && (
             <g>
-              <line x1={x(active.km)} x2={x(active.km)} y1={M.top} y2={M.top + plotH} stroke="#71717a" />
+              <line x1={x(active.km)} x2={x(active.km)} y1={M.top} y2={M.top + plotH} stroke={THEME.muted} />
               <circle cx={x(active.km)} cy={y(active.ele)} r="5" strokeWidth="2" className="fill-elev stroke-zinc-900" />
             </g>
           )}

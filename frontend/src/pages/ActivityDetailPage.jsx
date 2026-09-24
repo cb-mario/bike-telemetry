@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { CircleMarker, Polyline } from 'react-leaflet'
 import { useApp } from '../context/AppContext'
+import { useAuth } from '../context/AuthContext'
+import { estimateCalories } from '../lib/user'
 import { api } from '../lib/api'
 import { formatDate, formatDuration, formatNumber } from '../lib/format'
 import { SOURCE_LABEL, sportLabel } from '../lib/sportTypes'
@@ -12,6 +14,7 @@ import { FormError } from '../components/ui/Field'
 import { Chip } from '../components/RideCard'
 import { BaseMap } from '../components/map/BaseMap'
 import { boundsOf } from '../lib/geo'
+import { THEME } from '../lib/theme'
 import { ElevationProfile } from '../components/ElevationProfile'
 
 function Metric({ label, value, unit, accent }) {
@@ -33,6 +36,7 @@ export function ActivityDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { refresh, toast } = useApp()
+  const { user } = useAuth()
   const [activity, setActivity] = useState(null)
   const [track, setTrack] = useState(undefined) // undefined: cargando; null: sin track
   const [trackNote, setTrackNote] = useState('')
@@ -143,13 +147,13 @@ export function ActivityDetailPage() {
       {segments ? (
         <Card className="overflow-hidden">
           <BaseMap bounds={bounds} padding={40} className="h-[22rem] sm:h-[28rem]">
-            <Polyline positions={segments} pathOptions={{ color: '#3987e5', weight: 10, opacity: 0.15 }} interactive={false} />
-            <Polyline positions={segments} pathOptions={{ color: '#3987e5', weight: 3.5, opacity: 0.95 }} interactive={false} />
-            {start && <CircleMarker center={start} radius={6} pathOptions={{ color: '#18181b', weight: 2, fillColor: '#f4f4f5', fillOpacity: 1 }} />}
-            {end && <CircleMarker center={end} radius={6} pathOptions={{ color: '#18181b', weight: 2, fillColor: '#3987e5', fillOpacity: 1 }} />}
+            <Polyline positions={segments} pathOptions={{ color: THEME.glow, weight: 10, opacity: 0.18 }} interactive={false} />
+            <Polyline positions={segments} pathOptions={{ color: THEME.route, weight: 3.5, opacity: 0.95 }} interactive={false} />
+            {start && <CircleMarker center={start} radius={6} pathOptions={{ color: THEME.card, weight: 2, fillColor: THEME.ink, fillOpacity: 1 }} />}
+            {end && <CircleMarker center={end} radius={6} pathOptions={{ color: THEME.card, weight: 2, fillColor: THEME.route, fillOpacity: 1 }} />}
             {hover.point && (
               <CircleMarker center={[hover.point.lat, hover.point.lon]} radius={7}
-                pathOptions={{ color: '#18181b', weight: 2, fillColor: '#c98500', fillOpacity: 1 }} />
+                pathOptions={{ color: THEME.card, weight: 2, fillColor: THEME.elev, fillOpacity: 1 }} />
             )}
           </BaseMap>
           {(trackNote || (!track && track !== undefined)) && (
@@ -180,7 +184,8 @@ export function ActivityDetailPage() {
         <Metric label="FC media" value={a.avgHr ?? '—'} unit="bpm" accent="bg-hr" />
         <Metric label="FC máx." value={a.maxHr ?? '—'} unit="bpm" accent="bg-hr" />
         <Metric label="Desnivel positivo" value={a.elevationGain != null ? formatNumber(a.elevationGain) : '—'} unit="m" accent="bg-elev" />
-        <Metric label="Desnivel por km" value={a.elevationGain != null ? formatNumber(a.elevationGain / a.distanceKm, 1) : '—'} unit="m/km" accent="bg-elev" />
+        <Metric label="Calorías (estim.)" unit="kcal" accent="bg-hr"
+          value={estimateCalories(a, user) != null ? formatNumber(estimateCalories(a, user)) : '—'} />
       </div>
 
       {a.notes && (

@@ -19,7 +19,7 @@ function Stat({ label, value, accent }) {
 }
 
 // Tarjeta de ruta planificada: el enlace abre el editor; acciones de descarga y borrado aparte
-export function RouteCard({ route: r, avgSpeed, onDownload, onDelete, downloading }) {
+export function RouteCard({ route: r, avgSpeed, onDownload, onDelete, downloading, index = 0 }) {
   const [confirming, setConfirming] = useState(false)
   const eta = avgSpeed ? Math.round((r.distanceKm / avgSpeed) * 60) : null
 
@@ -33,7 +33,8 @@ export function RouteCard({ route: r, avgSpeed, onDownload, onDelete, downloadin
   }
 
   return (
-    <Card as="li" className="group flex flex-col overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:border-zinc-700 hover:shadow-xl hover:shadow-black/40">
+    <Card as="li" style={{ '--i': index % 12 }}
+      className="group flex flex-col overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-brand/40 hover:shadow-[0_24px_48px_-24px_rgb(59_130_246/0.55)]">
       <Link to={`/rutas/${r.id}`} className="flex flex-1 flex-col outline-none focus-visible:ring-2 focus-visible:ring-series/60">
         <div className="relative h-32 border-b border-zinc-800 bg-zinc-950/60 bg-[linear-gradient(rgb(39_39_42/0.35)_1px,transparent_1px),linear-gradient(90deg,rgb(39_39_42/0.35)_1px,transparent_1px)] bg-[size:16px_16px]">
           <RoutePreview segments={r.preview} width={320} height={128} padding={14} markers

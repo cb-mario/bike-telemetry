@@ -1,9 +1,10 @@
-import { NavLink, Outlet, useNavigate } from 'react-router'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import { useAuth } from '../context/AuthContext'
 import { useApp } from '../context/AppContext'
-import { Button } from './ui/Button'
 import { Dialog } from './ui/Dialog'
 import { Logo } from './Logo'
+import { Avatar } from './Avatar'
+import { displayName } from '../lib/user'
 import { NewActivity } from './NewActivity'
 import { Toaster } from './Toaster'
 import { DropOverlay } from './FileDrop'
@@ -27,9 +28,10 @@ function Icon({ d, className = 'size-4' }) {
 
 // Estructura común: navegación fija (arriba en escritorio, abajo en móvil), modal y avisos
 export function AppShell() {
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
   const { dialog, openNewActivity, closeNewActivity, refresh, toast } = useApp()
   const navigate = useNavigate()
+  const location = useLocation()
 
   // GPX soltado sobre la app: con tiempos es una salida grabada; sin tiempos, una ruta planificada
   async function handleDroppedFile(file) {
@@ -47,27 +49,33 @@ export function AppShell() {
 
   return (
     <div className="min-h-svh pb-20 sm:pb-0">
-      <header className="sticky top-0 z-[1000] border-b border-zinc-800/80 bg-surface/75 backdrop-blur-md">
+      <header className="sticky top-0 z-[1000] border-b border-zinc-800/80 bg-surface/70 backdrop-blur-xl">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
           <Logo />
           <nav aria-label="Secciones" className="hidden items-center gap-1 rounded-xl border border-zinc-800 bg-zinc-900/70 p-1 sm:flex">
             {SECTIONS.map((s) => (
               <NavLink key={s.to} to={s.to} end={s.end}
                 className={({ isActive }) => `flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-sm font-medium transition-all duration-200
-                  ${isActive ? 'bg-zinc-700/70 text-zinc-100 shadow-sm' : 'text-zinc-400 hover:text-zinc-100'}`}>
+                  ${isActive ? 'bg-brand/20 text-white shadow-sm ring-1 ring-brand/40' : 'text-zinc-400 hover:text-zinc-100'}`}>
                 <Icon d={s.icon} />
                 {s.label}
               </NavLink>
             ))}
           </nav>
-          <div className="flex items-center gap-2">
-            <span className="hidden text-xs text-zinc-500 lg:inline">{user.email}</span>
-            <Button variant="ghost" size="sm" onClick={logout}>Salir</Button>
-          </div>
+          {/* Usuario: nombre y avatar, enlace al perfil */}
+          <NavLink to="/perfil" aria-label="Tu perfil"
+            className={({ isActive }) => `group flex items-center gap-2.5 rounded-full py-1 pr-1 pl-3 transition-all duration-200
+              ${isActive ? 'bg-brand/15 ring-1 ring-brand/40' : 'hover:bg-zinc-800/60'}`}>
+            <span className="hidden max-w-40 truncate text-sm font-medium text-zinc-200 group-hover:text-white md:inline">{displayName(user)}</span>
+            <Avatar user={user} />
+          </NavLink>
         </div>
       </header>
 
-      <Outlet />
+      {/* Transición suave al cambiar de sección */}
+      <div key={location.pathname.split('/')[1]} className="animate-page-in">
+        <Outlet />
+      </div>
 
       {/* Barra de pestañas inferior en móvil */}
       <nav aria-label="Secciones" className="fixed inset-x-0 bottom-0 z-[1000] border-t border-zinc-800 bg-surface/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-md sm:hidden">
@@ -75,7 +83,7 @@ export function AppShell() {
           {SECTIONS.map((s) => (
             <NavLink key={s.to} to={s.to} end={s.end}
               className={({ isActive }) => `flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors
-                ${isActive ? 'text-zinc-100' : 'text-zinc-500'}`}>
+                ${isActive ? 'text-brand-2' : 'text-zinc-500'}`}>
               <Icon d={s.icon} className="size-5" />
               {s.label}
             </NavLink>

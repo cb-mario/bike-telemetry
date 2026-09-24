@@ -95,9 +95,9 @@ export function RoutesLibraryPage() {
           </div>
         </Card>
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {routes.map((r) => (
-            <RouteCard key={r.id} route={r} avgSpeed={avgSpeed} downloading={downloadingId === r.id}
+        <ul className="stagger grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {routes.map((r, i) => (
+            <RouteCard key={r.id} route={r} index={i} avgSpeed={avgSpeed} downloading={downloadingId === r.id}
               onDownload={handleDownload} onDelete={handleDelete} />
           ))}
         </ul>

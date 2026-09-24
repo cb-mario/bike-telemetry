@@ -5,6 +5,7 @@ import { useApp } from '../context/AppContext'
 import { api } from '../lib/api'
 import { formatDuration, formatNumber } from '../lib/format'
 import { boundsOf } from '../lib/geo'
+import { THEME } from '../lib/theme'
 import { ROUTING_OPTIONS, downloadGpx, getPlannedRoute, savePlannedRoute } from '../lib/planner'
 import { elevationGain, lengthKm, withDistance } from '../lib/track'
 import { useRouteLegs } from '../lib/useRouteLegs'
@@ -188,19 +189,19 @@ export function RouteEditorPage() {
         <ClickToAdd onAdd={add} />
         {showRides && rides?.map((r) => (
           <Polyline key={r.id} positions={r.segments} interactive={false}
-            pathOptions={{ color: '#a1a1aa', weight: 2, opacity: 0.35 }} />
+            pathOptions={{ color: THEME.rides, weight: 2, opacity: 0.35 }} />
         ))}
         {geometry.length > 1 && (
           <>
             <Polyline positions={geometry.map(([lat, lon]) => [lat, lon])} interactive={false}
-              pathOptions={{ color: '#3987e5', weight: 10, opacity: 0.18 }} />
+              pathOptions={{ color: THEME.glow, weight: 10, opacity: 0.18 }} />
             <Polyline positions={geometry.map(([lat, lon]) => [lat, lon])} interactive={false}
-              pathOptions={{ color: '#3987e5', weight: 4, opacity: 0.95, dashArray: loading ? '6 8' : null }} />
+              pathOptions={{ color: THEME.route, weight: 4, opacity: 0.95, dashArray: loading ? '6 8' : null }} />
           </>
         )}
         {hover.point && (
           <CircleMarker center={[hover.point.lat, hover.point.lon]} radius={7}
-            pathOptions={{ color: '#18181b', weight: 2, fillColor: '#c98500', fillOpacity: 1 }} />
+            pathOptions={{ color: THEME.card, weight: 2, fillColor: THEME.elev, fillOpacity: 1 }} />
         )}
         <WaypointMarkers waypoints={waypoints} onMove={move} onRemove={remove} />
       </BaseMap>
@@ -283,7 +284,7 @@ export function RouteEditorPage() {
           <label className="flex cursor-pointer items-center justify-between gap-3 text-sm text-zinc-300">
             Mostrar mis salidas en el mapa
             <input type="checkbox" checked={showRides} onChange={(e) => setShowRides(e.target.checked)}
-              className="size-4 accent-[#3987e5]" />
+              className="size-4 accent-brand" />
           </label>
         </PanelSection>
       </aside>

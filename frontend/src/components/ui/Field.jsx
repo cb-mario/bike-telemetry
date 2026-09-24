@@ -2,7 +2,7 @@ import { useId } from 'react'
 
 const inputClass = `h-9 w-full rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 text-sm text-zinc-100
   placeholder:text-zinc-600 transition-all duration-200
-  hover:border-zinc-700 focus:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-series/40
+  hover:border-zinc-700 focus:border-brand/60 focus:outline-none focus:ring-2 focus:ring-brand/30
   disabled:opacity-50 [color-scheme:dark]`
 
 export function Input({ className = '', ...props }) {

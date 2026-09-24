@@ -11,7 +11,8 @@ import { ZONE_BG } from '../lib/zones'
 
 const SOURCE_LABEL = {
   profile: 'de tu perfil',
-  activities: 'estimada',
+  activities: 'la mayor registrada',
+  age: 'estimada por tu edad',
 }
 
 export function HrZonesCard({ zones: data, loading, onProfileChange }) {
@@ -65,7 +66,7 @@ function ZoneBars({ data }) {
                   {/* Barra horizontal: extremo redondeado, base recta en el origen */}
                   {z.percentTime > 0 && (
                     <div style={{ width: `${width}%` }}
-                      className={`h-full rounded-r ${ZONE_BG[i]} transition-[filter] ${active === z.zone ? 'brightness-125' : ''}`} />
+                      className={`h-full origin-left animate-grow-x rounded-r ${ZONE_BG[i]} transition-[filter] ${active === z.zone ? 'brightness-125' : ''}`} />
                   )}
                 </div>
               </div>

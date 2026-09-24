@@ -85,8 +85,8 @@ export function RidesPage() {
         </Card>
       ) : (
         <>
-          <ul className={`grid gap-4 transition-opacity sm:grid-cols-2 lg:grid-cols-3 ${loading ? 'opacity-50' : ''}`}>
-            {page.data.map((ride) => <RideCard key={ride.id} ride={ride} zones={zones} />)}
+          <ul className={`stagger grid gap-4 transition-opacity sm:grid-cols-2 lg:grid-cols-3 ${loading ? 'opacity-50' : ''}`}>
+            {page.data.map((ride, i) => <RideCard key={ride.id} ride={ride} zones={zones} index={i} />)}
           </ul>
           {page.data.length < page.total && (
             <div className="flex justify-center">

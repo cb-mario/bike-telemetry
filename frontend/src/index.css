@@ -4,20 +4,38 @@
 @theme {
   --font-sans: system-ui, -apple-system, "SF Pro Text", "Segoe UI", sans-serif;
 
-  /* Superficies y tinta (modo oscuro) */
-  --color-surface: #09090b;
-  --color-ink: #f4f4f5;          /* zinc-100: cifras y texto principal */
-  --color-ink-secondary: #a1a1aa; /* zinc-400: etiquetas */
-  --color-ink-muted: #71717a;     /* zinc-500: texto terciario */
+  /* Escala "medianoche": sustituye al gris zinc de Tailwind por grises con tinte azul marino.
+     Así todos los componentes (bg-zinc-900, border-zinc-800, text-zinc-400…) toman el nuevo tono */
+  --color-zinc-50: #f5f8ff;
+  --color-zinc-100: #eaf0fb;  /* texto principal: 15:1 sobre tarjeta */
+  --color-zinc-200: #d3dbf0;
+  --color-zinc-300: #b3bfdf;
+  --color-zinc-400: #94a3cc;  /* etiquetas: 7:1 */
+  --color-zinc-500: #7383b0;  /* texto terciario: 4,7:1 */
+  --color-zinc-600: #4c5c8f;
+  --color-zinc-700: #34426f;
+  --color-zinc-800: #222e55;  /* bordes */
+  --color-zinc-900: #131d3b;  /* tarjetas */
+  --color-zinc-950: #0c1430;
 
-  /* Acentos de datos técnicos (tinta de marcas e iconos, nunca de texto) */
+  /* Superficies y tinta */
+  --color-surface: #0a1024;
+  --color-ink: #eaf0fb;
+  --color-ink-secondary: #94a3cc;
+  --color-ink-muted: #7383b0;
+
+  /* Acentos de datos técnicos (tinta de marcas e iconos, nunca de texto).
+     Validados para daltonismo entre sí y sobre las tarjetas (#101832) */
   --color-series: #3987e5;  /* distancia y velocidad: azul eléctrico */
   --color-dist: #3987e5;
   --color-elev: #c98500;    /* desnivel: ámbar */
-  --color-hr: #e66767;      /* pulsaciones: coral */
+  --color-hr: #d55181;      /* pulsaciones: coral magenta */
 
-  /* Zonas de pulso: 5 tonos distintos de frío a cálido. Validados para daltonismo
-     (pares adyacentes) sobre las tarjetas; siempre acompañados de la etiqueta Z1…Z5 */
+  /* Marca: degradado azul → cian de botones y detalles */
+  --color-brand: #3b82f6;
+  --color-brand-2: #22d3ee;
+
+  /* Zonas de pulso: 5 tonos de frío a cálido (validados; siempre con etiqueta Z1…Z5) */
   --color-zone-1: #3987e5;
   --color-zone-2: #199e70;
   --color-zone-3: #c98500;
@@ -25,9 +43,14 @@
   --color-zone-5: #9085e9;
 
   --color-strava: #fc4c02;
+  --color-critical: #f06a6a;
 
-  /* Estado (solo con icono o texto, nunca color solo) */
-  --color-critical: #e66767;
+  /* Animaciones (duraciones cortas y curvas suaves) */
+  --animate-page-in: page-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-rise-in: rise-in 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-fade-in: fade-in 600ms ease-out both;
+  --animate-grow-x: grow-x 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-float: float 6s ease-in-out infinite;
 }
 
 @layer base {
@@ -36,15 +59,64 @@
   }
   body {
     @apply bg-surface text-ink font-sans antialiased;
-    /* Resplandor muy sutil para que el desenfoque de las tarjetas tenga algo detrás */
-    background-image:
-      radial-gradient(60rem 30rem at 50% -10rem, rgb(57 135 229 / 0.07), transparent 70%),
-      radial-gradient(40rem 24rem at 100% 40rem, rgb(161 161 170 / 0.04), transparent 70%);
+    background-image: linear-gradient(180deg, #0a1024 0%, #0c1533 55%, #0a1024 100%);
     background-attachment: fixed;
   }
   ::selection {
-    @apply bg-series/30;
+    background: rgb(59 130 246 / 0.35);
   }
+}
+
+/* --- Animaciones --- */
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(10px); }
+}
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.985); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+}
+@keyframes grow-x {
+  from { transform: scaleX(0); }
+}
+@keyframes grow-y {
+  from { transform: scaleY(0); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes aurora {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(4%, 6%, 0) scale(1.12); }
+  100% { transform: translate3d(-3%, -2%, 0) scale(0.95); }
+}
+@keyframes draw {
+  from { stroke-dashoffset: var(--path-length, 1000); }
+}
+@keyframes step-in-right {
+  from { opacity: 0; transform: translateX(24px); }
+}
+@keyframes step-in-left {
+  from { opacity: 0; transform: translateX(-24px); }
+}
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to { background-position: 200% 0; }
+}
+
+/* Entrada escalonada: cada hijo con style="--i: n" aparece un poco después del anterior */
+.stagger > * {
+  animation: var(--animate-rise-in);
+  animation-delay: calc(var(--i, 0) * 55ms);
+}
+
+/* Barras de columnas que crecen desde la base */
+.grow-y {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: grow-y 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes dialog-in {
@@ -63,32 +135,32 @@
 
 /* Leaflet en modo oscuro: controles y atribución acordes al resto de la interfaz */
 .leaflet-container {
-  background: #09090b;
+  background: #0a1024;
   font-family: var(--font-sans);
 }
 .leaflet-bar a,
 .leaflet-bar a:hover {
-  background: rgb(24 24 27 / 0.9);
-  color: #f4f4f5;
-  border-color: #27272a;
+  background: rgb(19 29 59 / 0.9);
+  color: #eaf0fb;
+  border-color: #222e55;
 }
 .leaflet-bar {
-  border: 1px solid #27272a !important;
+  border: 1px solid #222e55 !important;
   border-radius: 0.5rem !important;
   overflow: hidden;
 }
 .leaflet-control-attribution {
-  background: rgb(9 9 11 / 0.7) !important;
-  color: #71717a !important;
+  background: rgb(10 16 36 / 0.75) !important;
+  color: #7383b0 !important;
 }
 .leaflet-control-attribution a {
-  color: #a1a1aa !important;
+  color: #94a3cc !important;
 }
 .leaflet-tooltip.route-tooltip {
-  background: rgb(9 9 11 / 0.95);
-  border: 1px solid #3f3f46;
+  background: rgb(12 20 48 / 0.96);
+  border: 1px solid #34426f;
   border-radius: 0.5rem;
-  color: #f4f4f5;
+  color: #eaf0fb;
   box-shadow: 0 10px 25px rgb(0 0 0 / 0.4);
   padding: 0.5rem 0.75rem;
 }
