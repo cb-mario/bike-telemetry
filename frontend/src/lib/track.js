@@ -28,3 +28,30 @@ export function sample(points, max) {
   const step = (points.length - 1) / (max - 1)
   return Array.from({ length: max }, (_, i) => points[Math.round(i * step)])
 }
+
+// Distancia total (km) de una lista de puntos [lat, lon, ...]
+export function lengthKm(coords) {
+  let m = 0
+  for (let i = 1; i < coords.length; i++) m += haversine(coords[i - 1], coords[i])
+  return m / 1000
+}
+
+// Desnivel positivo estimado: media móvil + umbral (mismo criterio que el backend)
+export function elevationGain(coords, window = 5, threshold = 2) {
+  const raw = coords.map((c) => c[2]).filter((e) => e != null)
+  if (raw.length < 2) return null
+  const half = Math.floor(window / 2)
+  const smooth = raw.map((_, i) => {
+    const w = raw.slice(Math.max(0, i - half), i + half + 1)
+    return w.reduce((s, e) => s + e, 0) / w.length
+  })
+  let gain = 0
+  let ref = smooth[0]
+  for (const e of smooth) {
+    if (e - ref >= threshold) {
+      gain += e - ref
+      ref = e
+    } else if (e < ref) ref = e
+  }
+  return Math.round(gain)
+}

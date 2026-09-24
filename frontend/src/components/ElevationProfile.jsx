@@ -3,7 +3,7 @@ import { useElementSize } from '../lib/useElementSize'
 import { formatNumber } from '../lib/format'
 import { sample } from '../lib/track'
 
-const HEIGHT = 200
+const DEFAULT_HEIGHT = 200
 const M = { top: 16, right: 12, bottom: 26, left: 44 }
 
 function niceStep(span, ticks = 4) {
@@ -13,7 +13,7 @@ function niceStep(span, ticks = 4) {
 }
 
 // Perfil de altitud (área ámbar) con cursor que informa del punto activo
-export function ElevationProfile({ points, activeIndex, onActiveChange }) {
+export function ElevationProfile({ points, activeIndex, onActiveChange, height: HEIGHT = DEFAULT_HEIGHT }) {
   const [ref, { width }] = useElementSize()
   const data = useMemo(() => sample(points.filter((p) => p.ele != null), 800), [points])
 

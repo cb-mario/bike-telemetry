@@ -5,7 +5,7 @@ import { AuthPage } from './pages/AuthPage'
 import { AppShell } from './components/AppShell'
 import { SummaryPage } from './pages/SummaryPage'
 import { RoutesPage } from './pages/RoutesPage'
-import { ExplorerPage } from './pages/ExplorerPage'
+import { PlannerPage } from './pages/PlannerPage'
 import { ActivityDetailPage } from './pages/ActivityDetailPage'
 
 export default function App() {
@@ -28,7 +28,8 @@ export default function App() {
             <Route index element={<SummaryPage />} />
             <Route path="rutas" element={<RoutesPage />} />
             <Route path="rutas/:id" element={<ActivityDetailPage />} />
-            <Route path="explorar" element={<ExplorerPage />} />
+            <Route path="planificador" element={<PlannerPage />} />
+            <Route path="explorar" element={<Navigate to="/planificador" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

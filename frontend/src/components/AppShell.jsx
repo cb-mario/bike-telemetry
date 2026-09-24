@@ -12,7 +12,7 @@ import { useWindowFileDrag } from '../lib/useWindowFileDrag'
 const SECTIONS = [
   { to: '/', label: 'Resumen', icon: 'M4 13h4v7H4zM10 4h4v16h-4zM16 9h4v11h-4z', end: true },
   { to: '/rutas', label: 'Mis rutas', icon: 'M4 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm16-10a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM6 17h7a3 3 0 0 0 0-6h-2a3 3 0 0 1 0-6h7' },
-  { to: '/explorar', label: 'Explorador', icon: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Zm0 0v14m6-12v14' },
+  { to: '/planificador', label: 'Planificador', icon: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Zm0 0v14m6-12v14' },
 ]
 
 function Icon({ d, className = 'size-4' }) {

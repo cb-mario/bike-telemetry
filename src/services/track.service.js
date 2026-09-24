@@ -186,6 +186,6 @@ function simplifyCoords(coords, max) {
 }
 
 module.exports = {
-  haversine, extent, round, downsample, computeStats, buildTrack, summaryPolyline, simplifyCoords,
+  segmentElevationGain, haversine, extent, round, downsample, computeStats, buildTrack, summaryPolyline, simplifyCoords,
   MAX_PREVIEW_POINTS,
 };

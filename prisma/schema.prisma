@@ -19,12 +19,13 @@ model User {
   createdAt    DateTime @default(now())
 
   // Conexión con Strava (tokens cifrados con AES-256-GCM, ver src/utils/crypto.js)
-  stravaAthleteId      String?    @unique
+  stravaAthleteId      String?        @unique
   stravaAccessToken    String?
   stravaRefreshToken   String?
   stravaTokenExpiresAt DateTime?
   stravaLastSyncAt     DateTime?
   activities           Activity[]
+  plannedRoutes        PlannedRoute[]
 }
 
 model Activity {
@@ -65,4 +66,23 @@ model ActivityTrack {
   minLon     Float
   maxLon     Float
   createdAt  DateTime @default(now())
+}
+
+// Ruta planificada en el mapa para exportarla al ciclocomputador
+model PlannedRoute {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  routing       String // "road" | "gravel" | "trekking" | "straight"
+  // JSON [[lat, lon], ...]: puntos que marca el usuario
+  waypoints     String
+  // JSON [[lat, lon, ele|null], ...]: trazado completo resultante
+  geometry      String
+  distanceKm    Float
+  elevationGain Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId, updatedAt])
 }

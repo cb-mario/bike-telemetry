@@ -12,6 +12,7 @@ const prisma = require('../../src/models/prisma');
 const PASSWORD = 'supersecreta';
 
 async function resetDb() {
+  await prisma.plannedRoute.deleteMany();
   await prisma.activity.deleteMany();
   await prisma.user.deleteMany();
 }
