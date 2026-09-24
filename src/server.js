@@ -10,6 +10,7 @@ if (!process.env.JWT_SECRET) {
 
 const healthRoutes = require('./routes/health.routes');
 const authRoutes = require('./routes/auth.routes');
+const activityRoutes = require('./routes/activity.routes');
 const { notFound, errorHandler } = require('./middlewares/errorHandler');
 
 const app = express();
@@ -23,6 +24,7 @@ app.use(express.urlencoded({ extended: true }));
 // Rutas
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/activities', activityRoutes);
 
 // 404 y errores (siempre al final)
 app.use(notFound);
