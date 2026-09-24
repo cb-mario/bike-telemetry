@@ -1,0 +1,37 @@
+// Esquema de datos de BikeTelemetry
+// Docs: https://pris.ly/d/prisma-schema
+
+// prisma-client-js genera JavaScript (CommonJS), compatible con el proyecto sin compilar TS
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id           Int        @id @default(autoincrement())
+  email        String     @unique
+  passwordHash String
+  createdAt    DateTime   @default(now())
+  activities   Activity[]
+}
+
+model Activity {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title         String
+  date          DateTime
+  distanceKm    Float
+  durationMin   Int
+  avgHr         Int? // bpm (opcional)
+  maxHr         Int? // bpm (opcional)
+  elevationGain Int? // metros de desnivel positivo (opcional)
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  @@index([userId, date])
+}
