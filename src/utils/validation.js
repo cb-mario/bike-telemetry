@@ -1,4 +1,5 @@
 const { HttpError } = require('../errors');
+const { startOfLocalDay } = require('./timezone');
 
 // Validadores compartidos por los controladores
 
@@ -31,7 +32,9 @@ function parseLimit(value, { max }) {
 // ISO 8601: fecha (YYYY-MM-DD) con hora opcional
 const ISO_DATE_REGEX = /^(\d{4})-(\d{2})-(\d{2})(T\d{2}:\d{2}(:\d{2}(\.\d{1,3})?)?(Z|[+-]\d{2}:\d{2})?)?$/;
 
-function parseDate(value, field, { endOfDay = false } = {}) {
+// Con `timeZone`, una fecha sin hora es el comienzo (o con endOfDay, el final) de ese día en la zona;
+// sin ella, en UTC. Una fecha con hora es siempre ese instante
+function parseDate(value, field, { endOfDay = false, timeZone } = {}) {
   const match = typeof value === 'string' && value.match(ISO_DATE_REGEX);
   const date = match && new Date(value);
   const [, year, month, day, time] = match || [];
@@ -46,16 +49,23 @@ function parseDate(value, field, { endOfDay = false } = {}) {
   if (!date || Number.isNaN(date.getTime()) || !isRealDay) {
     throw new HttpError(400, `${field} debe ser una fecha válida (ISO 8601, ej. 2026-09-24)`);
   }
+  if (time) return date;
+  if (timeZone) {
+    return endOfDay
+      ? new Date(startOfLocalDay(Number(year), Number(month), Number(day) + 1, timeZone).getTime() - 1)
+      : startOfLocalDay(Number(year), Number(month), Number(day), timeZone);
+  }
   // Un "to" con solo fecha incluye el día completo
-  if (endOfDay && !time) date.setUTCHours(23, 59, 59, 999);
+  if (endOfDay) date.setUTCHours(23, 59, 59, 999);
   return date;
 }
 
-// Rango opcional ?from=&to= de la query ("to" con solo fecha incluye el día completo)
-function parseDateRange({ from, to }) {
+// Rango opcional ?from=&to= de la query, con los días de la zona horaria indicada
+// ("to" con solo fecha incluye el día completo)
+function parseDateRange({ from, to }, timeZone) {
   const range = {
-    from: from !== undefined ? parseDate(from, 'from') : undefined,
-    to: to !== undefined ? parseDate(to, 'to', { endOfDay: true }) : undefined,
+    from: from !== undefined ? parseDate(from, 'from', { timeZone }) : undefined,
+    to: to !== undefined ? parseDate(to, 'to', { endOfDay: true, timeZone }) : undefined,
   };
   if (range.from && range.to && range.from > range.to) {
     throw new HttpError(400, '"from" no puede ser posterior a "to"');

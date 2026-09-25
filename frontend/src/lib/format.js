@@ -17,20 +17,28 @@ export function formatDuration(minutes) {
   return m ? `${h} h ${m} min` : `${h} h`
 }
 
-const dateFmt = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
-const shortDateFmt = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', timeZone: 'UTC' })
-const monthFmt = new Intl.DateTimeFormat('es-ES', { month: 'short', timeZone: 'UTC' })
-const monthYearFmt = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric', timeZone: 'UTC' })
-const monthNameFmt = new Intl.DateTimeFormat('es-ES', { month: 'long', timeZone: 'UTC' })
+// Fechas en la zona horaria del navegador, la misma con la que el backend agrupa por días.
+// Un instante ("2026-09-24T06:30:00Z") se muestra en hora local; una fecha de calendario sin hora
+// ("2026-09-01", inicio de semana o mes) es ese día tal cual, sin desplazarlo por la zona
+const dateFmt = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
+const shortDateFmt = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' })
+const monthFmt = new Intl.DateTimeFormat('es-ES', { month: 'short' })
+const monthYearFmt = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' })
+const monthNameFmt = new Intl.DateTimeFormat('es-ES', { month: 'long' })
 
-const weekdayDateFmt = new Intl.DateTimeFormat('es-ES', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' })
+const weekdayDateFmt = new Intl.DateTimeFormat('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })
 
-export const formatDate = (iso) => dateFmt.format(new Date(iso))
-export const formatWeekdayDate = (iso) => weekdayDateFmt.format(new Date(iso)).replaceAll('.', '')
-export const formatShortDate = (iso) => shortDateFmt.format(new Date(iso))
-export const formatMonth = (iso) => monthFmt.format(new Date(iso)).replace('.', '')
-export const formatMonthYear = (iso) => monthYearFmt.format(new Date(iso))
-export const formatMonthName = (iso) => monthNameFmt.format(new Date(iso))
+function toDate(value) {
+  const day = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  return day ? new Date(Number(day[1]), Number(day[2]) - 1, Number(day[3])) : new Date(value)
+}
+
+export const formatDate = (iso) => dateFmt.format(toDate(iso))
+export const formatWeekdayDate = (iso) => weekdayDateFmt.format(toDate(iso)).replaceAll('.', '')
+export const formatShortDate = (iso) => shortDateFmt.format(toDate(iso))
+export const formatMonth = (iso) => monthFmt.format(toDate(iso)).replace('.', '')
+export const formatMonthYear = (iso) => monthYearFmt.format(toDate(iso))
+export const formatMonthName = (iso) => monthNameFmt.format(toDate(iso))
 
 // Fecha local de hoy en formato YYYY-MM-DD (para <input type="date">)
 export function todayInput() {

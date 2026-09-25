@@ -68,6 +68,12 @@ async function findExistingStravaIds(stravaIds) {
   return new Set(rows.map((r) => r.stravaId));
 }
 
+// Fecha de la salida de Strava más antigua importada por el usuario (null si no hay)
+async function oldestStravaDate(userId) {
+  const result = await prisma.activity.aggregate({ where: { userId, source: 'strava' }, _min: { date: true } });
+  return result._min.date;
+}
+
 function createTrack(activityId, track) {
   return prisma.activityTrack.create({ data: { ...track, activityId } });
 }
@@ -104,5 +110,5 @@ async function maxRecordedHr(userId) {
 
 module.exports = {
   findForStats, maxRecordedHr, findManyByUser, countByUser, findRoutes, findByIdForUser,
-  create, createWithTrack, findTrack, createTrack, findExistingStravaIds, update, remove,
+  create, createWithTrack, findTrack, createTrack, findExistingStravaIds, oldestStravaDate, update, remove,
 };

@@ -14,7 +14,7 @@ const optionalNumber = (value, field, max) => (
   value !== undefined && value !== '' ? parseNumber(Number(value), field, { min: 0, max }) : undefined
 );
 
-function parseListQuery(query) {
+function parseListQuery(query, timeZone) {
   const { limit, offset, q, sportType } = query;
   if (q !== undefined && (typeof q !== 'string' || q.length > 100)) throw new HttpError(400, 'q no válido');
   if (sportType !== undefined && !SPORT_TYPES.includes(sportType)) {
@@ -36,14 +36,14 @@ function parseListQuery(query) {
   }
   return {
     ...filters,
-    ...parseDateRange(query),
+    ...parseDateRange(query, timeZone),
     limit: parseLimit(limit, { max: MAX_LIMIT }) ?? DEFAULT_LIMIT,
     offset: offset !== undefined ? parseNumber(Number(offset), 'offset', { min: 0, max: Number.MAX_SAFE_INTEGER, integer: true }) : 0,
   };
 }
 
 async function list(req, res) {
-  const result = await activityService.list(req.user.id, parseListQuery(req.query));
+  const result = await activityService.list(req.user.id, parseListQuery(req.query, req.timeZone));
   res.json(result);
 }
 
@@ -53,14 +53,14 @@ async function getById(req, res) {
 }
 
 async function create(req, res) {
-  const data = parseActivity(req.body, { partial: false });
+  const data = parseActivity(req.body, { partial: false, timeZone: req.timeZone });
   const activity = await activityService.create(req.user.id, data);
   res.status(201).json(activity);
 }
 
 async function update(req, res) {
   const id = parseId(req.params.id);
-  const changes = parseActivity(req.body, { partial: true });
+  const changes = parseActivity(req.body, { partial: true, timeZone: req.timeZone });
   const activity = await activityService.update(id, req.user.id, changes);
   res.json(activity);
 }
@@ -75,7 +75,7 @@ async function uploadGpx(req, res) {
 // Sin ?limit devuelve todas; el planificador pide solo las más recientes
 async function routes(req, res) {
   res.json(await activityService.routes(req.user.id, {
-    ...parseDateRange(req.query),
+    ...parseDateRange(req.query, req.timeZone),
     limit: parseLimit(req.query.limit, { max: 500 }),
   }));
 }

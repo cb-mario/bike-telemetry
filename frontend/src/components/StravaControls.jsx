@@ -35,7 +35,9 @@ export function StravaControls() {
     try {
       const result = await syncStrava()
       const n = result.imported
-      toast(n ? `${n === 1 ? '1 salida nueva importada' : `${n} salidas nuevas importadas`} desde Strava.` : 'Todo al día: no hay salidas nuevas en Strava.', 'success')
+      const imported = n ? `${n === 1 ? '1 salida nueva importada' : `${n} salidas nuevas importadas`} desde Strava.` : 'Todo al día: no hay salidas nuevas en Strava.'
+      // Historial largo: cada sincronización trae una parte para no agotar el límite de Strava
+      toast(result.hasMore ? `${imported} Quedan salidas antiguas: vuelve a sincronizar para seguir.` : imported, 'success')
       setStatus((s) => ({ ...s, lastSyncAt: result.lastSyncAt }))
       if (n) refresh()
     } catch (err) {

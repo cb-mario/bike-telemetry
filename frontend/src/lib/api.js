@@ -26,6 +26,15 @@ export class ApiError extends Error {
   }
 }
 
+// Zona horaria del navegador: el backend cuenta días, semanas y meses en ella
+const TIME_ZONE = (() => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone
+  } catch {
+    return undefined
+  }
+})()
+
 let onUnauthorized = () => {}
 export function setUnauthorizedHandler(handler) {
   onUnauthorized = handler
@@ -48,6 +57,7 @@ export async function api(path, { method = 'GET', body, query, raw = false } = {
       headers: {
         ...(body !== undefined && !isForm && { 'Content-Type': 'application/json' }),
         ...(token && { Authorization: `Bearer ${token}` }),
+        ...(TIME_ZONE && { 'X-Timezone': TIME_ZONE }),
       },
       body: body === undefined || isForm ? body : JSON.stringify(body),
     })

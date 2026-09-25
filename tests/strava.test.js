@@ -151,7 +151,8 @@ describe('Strava', () => {
       assert.equal(res.body.imported, 3);
       assert.equal(res.body.skippedNotRides, 1);
       assert.equal(res.body.skippedInvalid, 1);
-      assert.equal(calls[0].query.per_page, '30');
+      assert.equal(calls[0].query.per_page, '100');
+      assert.equal(res.body.hasMore, false);
       assert.equal(calls[0].headers.Authorization, 'Bearer access-1');
 
       const ride = await prisma.activity.findUnique({ where: { stravaId: '1001' } });
@@ -223,6 +224,66 @@ describe('Strava', () => {
       await connect();
       mockStrava({ '/api/v3/athlete/activities': () => [429, { message: 'Rate Limit Exceeded' }] });
       assert.equal((await sync()).status, 429);
+    });
+
+    describe('historial largo (paginación)', () => {
+      // Strava simulado con `total` salidas, de la más reciente a la más antigua (una por hora)
+      const history = (total) => Array.from({ length: total }, (_, i) => stravaActivity({
+        id: 10000 + total - i,
+        start_date: new Date(Date.UTC(2026, 8, 20) - i * 3600 * 1000).toISOString().replace('.000', ''),
+      }));
+      const mockHistory = (list) => mockStrava({
+        '/api/v3/athlete/activities': ({ query }) => {
+          const before = query.before ? Number(query.before) * 1000 : Infinity;
+          const visible = list.filter((s) => Date.parse(s.start_date) < before);
+          const size = Number(query.per_page);
+          const start = (Number(query.page) - 1) * size;
+          return [200, visible.slice(start, start + size)];
+        },
+      });
+
+      it('trae todas las páginas del historial', async () => {
+        await connect();
+        const calls = mockHistory(history(250));
+        const res = await sync();
+        assert.equal(res.body.imported, 250);
+        assert.equal(res.body.hasMore, false);
+        assert.deepEqual(calls.map((c) => c.query.page), ['1', '2', '3']);
+        assert.equal(await prisma.activity.count(), 250);
+      });
+
+      it('como mucho 10 páginas por vez; la siguiente sincronización sigue donde lo dejó', async () => {
+        await connect();
+        const list = history(1150);
+        let calls = mockHistory(list);
+        let res = await sync();
+        assert.equal(calls.length, 10);
+        assert.equal(res.body.imported, 1000);
+        assert.equal(res.body.hasMore, true);
+
+        calls = mockHistory(list);
+        res = await sync();
+        assert.equal(res.body.imported, 150);
+        assert.equal(res.body.hasMore, false);
+        // Una página para ver que no hay nada nuevo y el resto, anteriores a la más antigua importada
+        assert.equal(calls[0].query.before, undefined);
+        assert.ok(calls.slice(1).every((c) => c.query.before));
+        assert.equal(await prisma.activity.count(), 1150);
+      });
+
+      it('una sincronización normal solo trae lo nuevo', async () => {
+        await connect();
+        const list = history(120);
+        mockHistory(list);
+        await sync();
+
+        const newer = [stravaActivity({ id: 99999, start_date: '2026-09-21T07:00:00Z' }), ...list];
+        const calls = mockHistory(newer);
+        const res = await sync();
+        assert.equal(res.body.imported, 1);
+        assert.equal(res.body.hasMore, false);
+        assert.ok(calls.length <= 2, `${calls.length} peticiones`);
+      });
     });
   });
 

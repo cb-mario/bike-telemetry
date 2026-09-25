@@ -3,8 +3,8 @@ const User = require('../models/user.model');
 const { HttpError } = require('../errors');
 const { estimatesFor } = require('./profile.service');
 const { round } = require('../utils/number');
+const { startOfLocalDay, localDate, formatLocalDate } = require('../utils/timezone');
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_BUCKETS = 12;
 const MAX_BUCKETS = 400;
 
@@ -51,8 +51,8 @@ function pickRecord(activities, field) {
   return { id: best.id, title: best.title, date: best.date, [field]: best[field] };
 }
 
-async function summary(userId, { from, to }) {
-  const activities = await Activity.findForStats({ userId, from, to });
+// Resumen de unas actividades ya filtradas por el rango
+function summarize(activities, { from, to }) {
   const totals = aggregate(activities);
   const recordedMaxHr = activities.reduce((max, a) => Math.max(max, a.maxHr ?? 0), 0);
 
@@ -71,37 +71,54 @@ async function summary(userId, { from, to }) {
   };
 }
 
-// Inicio del periodo (UTC): lunes de la semana o día 1 del mes
-function startOfPeriod(date, period) {
-  if (period === 'month') return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
-  const day = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-  const daysSinceMonday = (day.getUTCDay() + 6) % 7;
-  return new Date(day.getTime() - daysSinceMonday * DAY_MS);
+async function summary(userId, { from, to }) {
+  return summarize(await Activity.findForStats({ userId, from, to }), { from, to });
 }
 
-function nextPeriod(date, period) {
-  if (period === 'month') return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1));
-  return new Date(date.getTime() + 7 * DAY_MS);
+// Resumen de todo el historial, del mes en curso y del mismo tramo del mes anterior (del día 1 al
+// día de hoy, recortado si el mes anterior es más corto), con los días de la zona del usuario.
+// Una sola lectura de la BD en lugar de tres peticiones
+async function overview(userId, { timeZone, now = new Date() }) {
+  const today = localDate(now, timeZone);
+  const prev = { year: today.month === 1 ? today.year - 1 : today.year, month: today.month === 1 ? 12 : today.month - 1 };
+  const prevLastDay = new Date(Date.UTC(today.year, today.month - 1, 0)).getUTCDate();
+
+  const monthFrom = startOfLocalDay(today.year, today.month, 1, timeZone);
+  const prevFrom = startOfLocalDay(prev.year, prev.month, 1, timeZone);
+  const prevTo = new Date(startOfLocalDay(prev.year, prev.month, Math.min(today.day, prevLastDay) + 1, timeZone) - 1);
+
+  const all = await Activity.findForStats({ userId });
+  const within = (from, to) => all.filter((a) => a.date >= from && (!to || a.date <= to));
+  return {
+    total: summarize(all, {}),
+    month: summarize(within(monthFrom), { from: monthFrom }),
+    prevMonth: summarize(within(prevFrom, prevTo), { from: prevFrom, to: prevTo }),
+    monthStart: formatLocalDate({ ...today, day: 1 }),
+    prevMonthStart: formatLocalDate({ ...prev, day: 1 }),
+  };
 }
 
-// Por defecto: los últimos 12 periodos hasta hoy
-function defaultFrom(to, period) {
-  let start = startOfPeriod(to, period);
-  for (let i = 1; i < DEFAULT_BUCKETS; i++) {
-    start = period === 'month'
-      ? new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() - 1, 1))
-      : new Date(start.getTime() - 7 * DAY_MS);
-  }
-  return start;
+// Inicio del periodo en la zona del usuario: lunes de la semana o día 1 del mes (a las 00:00),
+// y el periodo `shift` posiciones después (o antes, si es negativo)
+function startOfPeriod(date, period, timeZone, shift = 0) {
+  const { year, month, day } = localDate(date, timeZone);
+  if (period === 'month') return startOfLocalDay(year, month + shift, 1, timeZone);
+  const daysSinceMonday = (new Date(Date.UTC(year, month - 1, day)).getUTCDay() + 6) % 7;
+  return startOfLocalDay(year, month, day - daysSinceMonday + shift * 7, timeZone);
 }
 
-async function evolution(userId, { period, from, to }) {
+async function evolution(userId, { period, from, to, timeZone }) {
   const rangeTo = to ?? new Date();
-  const rangeFrom = from ?? defaultFrom(rangeTo, period);
+  // Por defecto: los últimos 12 periodos hasta hoy
+  const rangeFrom = from ?? startOfPeriod(rangeTo, period, timeZone, -(DEFAULT_BUCKETS - 1));
 
   // Periodos consecutivos, incluidos los vacíos, para poder dibujar la serie directamente
   const buckets = [];
-  for (let start = startOfPeriod(rangeFrom, period); start <= rangeTo; start = nextPeriod(start, period)) {
+  for (
+    let start = startOfPeriod(rangeFrom, period, timeZone);
+    start <= rangeTo;
+    start = startOfPeriod(start, period, timeZone, 1)
+  ) {
     if (buckets.length >= MAX_BUCKETS) {
       throw new HttpError(400, `Rango demasiado amplio: máximo ${MAX_BUCKETS} periodos`);
     }
@@ -120,7 +137,7 @@ async function evolution(userId, { period, from, to }) {
     from: rangeFrom,
     to: rangeTo,
     buckets: buckets.map((b) => ({
-      periodStart: b.start.toISOString().slice(0, 10),
+      periodStart: formatLocalDate(localDate(b.start, timeZone)),
       ...aggregate(b.activities),
     })),
   };
@@ -190,4 +207,4 @@ async function hrZones(userId, { from, to }) {
   };
 }
 
-module.exports = { summary, evolution, hrZones };
+module.exports = { summary, overview, evolution, hrZones };

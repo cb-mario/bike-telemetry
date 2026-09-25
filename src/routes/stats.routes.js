@@ -8,6 +8,7 @@ const router = Router();
 router.use(authMiddleware);
 
 router.get('/summary', statsController.summary);
+router.get('/overview', statsController.overview);
 router.get('/evolution', statsController.evolution);
 router.get('/hr-zones', statsController.hrZones);
 

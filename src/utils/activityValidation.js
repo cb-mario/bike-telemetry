@@ -46,8 +46,9 @@ function parseNotes(value) {
   return value.trim() || null;
 }
 
-function parseActivityDate(value, field) {
-  const date = parseDate(value, field);
+function parseActivityDate(value, field, { timeZone } = {}) {
+  // Una fecha sin hora (alta manual) es el comienzo de ese día en la zona del usuario
+  const date = parseDate(value, field, { timeZone });
   // Margen de 1 día por diferencias de zona horaria
   if (date.getTime() > Date.now() + 24 * 60 * 60 * 1000) {
     throw new HttpError(400, 'La fecha de la actividad no puede estar en el futuro');
@@ -59,7 +60,7 @@ function parseActivityDate(value, field) {
 }
 
 // Valida el body; en modo parcial (PATCH) solo los campos presentes
-function parseActivity(body, { partial }) {
+function parseActivity(body, { partial, timeZone }) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
     throw new HttpError(400, 'El cuerpo de la petición debe ser un objeto JSON');
   }
@@ -81,7 +82,7 @@ function parseActivity(body, { partial }) {
       data[field] = null;
       continue;
     }
-    data[field] = rule.parse(value, field);
+    data[field] = rule.parse(value, field, { timeZone });
   }
 
   if (partial && Object.keys(data).length === 0) {

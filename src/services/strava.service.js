@@ -14,7 +14,10 @@ const SCOPES = 'read,activity:read_all';
 const STATE_PURPOSE = 'strava-oauth';
 // Inicio de sesión con Strava (state sin usuario; la sesión se entrega con utils/loginTicket)
 const LOGIN_STATE_PURPOSE = 'strava-login';
-const SYNC_PAGE_SIZE = 30;
+// Sincronización por páginas; como mucho SYNC_MAX_PAGES por vez (límite de Strava: 100 peticiones
+// cada 15 min). Si queda historial por traer, la respuesta lo indica con hasMore
+const SYNC_PAGE_SIZE = 100;
+const SYNC_MAX_PAGES = 10;
 // Tipos de Strava que se importan (el campo "type"; el detalle va en "sport_type")
 const RIDE_TYPES = ['Ride', 'VirtualRide'];
 // Renovar el token si caduca en menos de este margen
@@ -252,12 +255,59 @@ function mapStravaActivity(s) {
   }
 }
 
+async function fetchActivityPage(user, { page, before }) {
+  const params = new URLSearchParams({ per_page: SYNC_PAGE_SIZE, page, ...(before && { before }) });
+  const list = await stravaGet(user, `/athlete/activities?${params}`);
+  if (!Array.isArray(list)) throw new HttpError(502, 'Respuesta inesperada de Strava');
+  return list;
+}
+
+// Recorre las páginas (de la más reciente a la más antigua) mientras `keepGoing(lista)` lo pida
+// y no se acabe el presupuesto de páginas. Devuelve si ha llegado al final del historial
+async function walkPages(user, { before, budget, onPage }) {
+  for (let page = 1; budget.left > 0; page++) {
+    budget.left -= 1;
+    const list = await fetchActivityPage(user, { page, before });
+    const keepGoing = await onPage(list);
+    if (list.length < SYNC_PAGE_SIZE) return true;
+    if (!keepGoing) return false;
+  }
+  return false;
+}
+
 async function sync(userId) {
   const user = await getConnectedUser(userId);
-  const list = await stravaGet(user, `/athlete/activities?per_page=${SYNC_PAGE_SIZE}`);
-  if (!Array.isArray(list)) throw new HttpError(502, 'Respuesta inesperada de Strava');
+  const budget = { left: SYNC_MAX_PAGES };
+  const seen = new Map(); // id → actividad de Strava (sin repetir entre páginas)
+  let notRides = 0;
 
-  const rides = list.filter((s) => RIDE_TYPES.includes(s.type));
+  const collect = async (list) => {
+    const fresh = list.filter((s) => !seen.has(String(s.id)));
+    fresh.forEach((s) => seen.set(String(s.id), s));
+    notRides += fresh.filter((s) => !RIDE_TYPES.includes(s.type)).length;
+    const rideIds = fresh.filter((s) => RIDE_TYPES.includes(s.type)).map((s) => String(s.id));
+    const existing = await Activity.findExistingStravaIds(rideIds);
+    return { rideIds, existing };
+  };
+
+  // 1) Lo nuevo: desde la más reciente hasta una página cuyas salidas ya estén todas importadas
+  const reachedEnd = await walkPages(user, {
+    budget,
+    onPage: async (list) => {
+      const { rideIds, existing } = await collect(list);
+      return !(rideIds.length && rideIds.every((id) => existing.has(id)));
+    },
+  });
+
+  // 2) Lo antiguo que falte (primera sincronización larga): antes de la salida más antigua importada
+  let complete = reachedEnd;
+  if (!reachedEnd && budget.left > 0) {
+    const oldest = await Activity.oldestStravaDate(userId);
+    const before = oldest && Math.floor(oldest.getTime() / 1000);
+    complete = await walkPages(user, { before, budget, onPage: async (list) => (await collect(list), true) });
+  }
+
+  const rides = [...seen.values()].filter((s) => RIDE_TYPES.includes(s.type));
   const existing = await Activity.findExistingStravaIds(rides.map((s) => String(s.id)));
 
   const created = [];
@@ -281,8 +331,10 @@ async function sync(userId) {
   return {
     imported: created.length,
     alreadyImported: existing.size,
-    skippedNotRides: list.length - rides.length,
+    skippedNotRides: notRides,
     skippedInvalid: invalid,
+    // Queda historial por traer: otra sincronización seguirá donde lo ha dejado esta
+    hasMore: !complete,
     lastSyncAt,
     activityIds: created.map((a) => a.id),
   };

@@ -3,6 +3,8 @@ process.env.NODE_ENV = 'test';
 process.env.DATABASE_URL = 'file:./test.db';
 process.env.JWT_SECRET = 'test-secret';
 process.env.JWT_EXPIRES_IN = '1h';
+// Los tests existentes cuentan días en UTC; los de zona horaria envían X-Timezone
+process.env.APP_TIMEZONE = 'UTC';
 process.env.BCRYPT_ROUNDS = '4';
 process.env.TOKEN_ENCRYPTION_KEY = '0'.repeat(64);
 process.env.STRAVA_CLIENT_ID = '12345';

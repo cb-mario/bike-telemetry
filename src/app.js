@@ -10,6 +10,7 @@ const statsRoutes = require('./routes/stats.routes');
 const stravaRoutes = require('./routes/strava.routes');
 const plannedRouteRoutes = require('./routes/plannedRoute.routes');
 const { notFound, errorHandler } = require('./middlewares/errorHandler');
+const timeZone = require('./middlewares/timeZone');
 
 // Aplicación Express sin arrancar (server.js la pone a escuchar; los tests la usan directamente)
 const app = express();
@@ -24,6 +25,7 @@ app.use(cors({ origin: process.env.CORS_ORIGIN || frontendUrl() }));
 // Las rutas planificadas envían su trazado completo (hasta 2 MB); el resto, el límite por defecto (100 kB)
 app.use('/api/planned-routes', express.json({ limit: '2mb' }));
 app.use(express.json());
+app.use(timeZone);
 
 // Rutas
 app.use('/api/health', healthRoutes);
