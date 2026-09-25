@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { useApp } from '../context/AppContext'
 import { useActivities } from '../lib/useActivities'
+import { useApiQuery } from '../lib/useApiQuery'
 import { api } from '../lib/api'
 import { formatNumber } from '../lib/format'
 import { STRAVA_RESULT } from '../lib/strava'
@@ -20,7 +21,6 @@ export function RidesPage() {
   const [filters, setFilters] = useState(EMPTY_FILTERS)
   const query = useMemo(() => filtersToQuery(filters), [filters])
   const { page, loading, error, loadMore } = useActivities(query, refreshKey)
-  const [zones, setZones] = useState(null)
   const [loadingMore, setLoadingMore] = useState(false)
 
   // Resultado de la vuelta desde Strava (?strava=connected|denied|…), mostrado una sola vez
@@ -35,9 +35,7 @@ export function RidesPage() {
   }, [searchParams, setSearchParams, toast])
 
   // Límites de zonas para etiquetar la FC de cada salida
-  useEffect(() => {
-    api('/stats/hr-zones').then((z) => setZones(z.zones)).catch(() => {})
-  }, [refreshKey])
+  const zones = useApiQuery(() => api('/stats/hr-zones'), [refreshKey]).data?.zones ?? null
 
   async function handleLoadMore() {
     setLoadingMore(true)

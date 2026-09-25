@@ -1,4 +1,4 @@
-import { api, ApiError, tokenStorage } from './api'
+import { api } from './api'
 
 export const ROUTING_OPTIONS = [
   { value: 'road', label: 'Carretera' },
@@ -19,13 +19,7 @@ export const savePlannedRoute = (id, route) => (id
 
 // Descarga el GPX (la petición lleva el token, así que no vale un <a href> directo)
 export async function downloadGpx(id) {
-  const res = await fetch(`/api/planned-routes/${id}/gpx`, {
-    headers: { Authorization: `Bearer ${tokenStorage.get()}` },
-  })
-  if (!res.ok) {
-    const data = await res.json().catch(() => null)
-    throw new ApiError(res.status, data?.error ?? 'No se pudo descargar el GPX')
-  }
+  const res = await api(`/planned-routes/${id}/gpx`, { raw: true })
   const filename = /filename="([^"]+)"/.exec(res.headers.get('Content-Disposition') ?? '')?.[1] ?? 'ruta.gpx'
   const url = URL.createObjectURL(await res.blob())
   const link = Object.assign(document.createElement('a'), { href: url, download: filename })

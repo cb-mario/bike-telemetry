@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useApp } from '../context/AppContext'
 import { api } from '../lib/api'
+import { useApiQuery } from '../lib/useApiQuery'
 import { deletePlannedRoute, downloadGpx, importRouteGpx, listPlannedRoutes } from '../lib/planner'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
@@ -12,16 +13,18 @@ import { RouteCard } from '../components/routes/RouteCard'
 export function RoutesLibraryPage() {
   const { toast, refreshKey } = useApp()
   const navigate = useNavigate()
-  const [routes, setRoutes] = useState(null)
-  const [avgSpeed, setAvgSpeed] = useState(null)
+  const routesQuery = useApiQuery(listPlannedRoutes, [refreshKey])
+  const routes = routesQuery.error ? [] : routesQuery.data ?? null
+  const setRoutes = routesQuery.setData
+  // Velocidad media histórica para estimar cuánto se tarda en cada ruta
+  const avgSpeed = useApiQuery(() => api('/stats/summary'), [refreshKey]).data?.avgSpeedKmh ?? null
   const [downloadingId, setDownloadingId] = useState(null)
   const [importing, setImporting] = useState(false)
   const fileRef = useRef(null)
 
   useEffect(() => {
-    listPlannedRoutes().then(setRoutes).catch((err) => { setRoutes([]); toast(err.message, 'error') })
-    api('/stats/summary').then((s) => setAvgSpeed(s.avgSpeedKmh)).catch(() => {})
-  }, [refreshKey, toast])
+    if (routesQuery.error) toast(routesQuery.error, 'error')
+  }, [routesQuery.error, toast])
 
   async function handleImport(file) {
     if (!file) return

@@ -1,4 +1,4 @@
-const jwt = require('jsonwebtoken');
+const { signPurpose, readPurpose } = require('./signedToken');
 
 // Ticket de corta duración con el que el callback de un proveedor externo (Strava, Google) pasa
 // la sesión al frontend. Viaja en el fragmento de la URL (#), que no llega a ningún servidor ni
@@ -7,22 +7,13 @@ const PURPOSE = 'login-ticket';
 const TTL = '2m';
 
 function issueLoginTicket(userId, { created }) {
-  return jwt.sign({ sub: String(userId), purpose: PURPOSE, created: Boolean(created) }, process.env.JWT_SECRET, {
-    algorithm: 'HS256',
-    expiresIn: TTL,
-  });
+  return signPurpose(PURPOSE, { sub: String(userId), created: Boolean(created) }, TTL);
 }
 
 // { userId, created } o null si el ticket no es válido, ha caducado o es de otro tipo
 function readLoginTicket(ticket) {
-  if (typeof ticket !== 'string') return null;
-  try {
-    const payload = jwt.verify(ticket, process.env.JWT_SECRET, { algorithms: ['HS256'] });
-    if (payload.purpose !== PURPOSE) return null;
-    return { userId: Number(payload.sub), created: Boolean(payload.created) };
-  } catch {
-    return null;
-  }
+  const payload = readPurpose(ticket, PURPOSE);
+  return payload && { userId: Number(payload.sub), created: Boolean(payload.created) };
 }
 
 // URL del frontend a la que vuelve un login correcto

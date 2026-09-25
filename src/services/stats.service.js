@@ -1,7 +1,8 @@
 const Activity = require('../models/activity.model');
 const User = require('../models/user.model');
-const { HttpError } = require('../middlewares/errorHandler');
+const { HttpError } = require('../errors');
 const { estimatesFor } = require('./profile.service');
+const { round } = require('../utils/number');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_BUCKETS = 12;
@@ -16,10 +17,6 @@ const HR_ZONES = [
   { zone: 5, name: 'VO2 máx', minPct: 0.9 },
 ];
 
-const round = (value, decimals = 1) => {
-  const factor = 10 ** decimals;
-  return Math.round(value * factor) / factor;
-};
 
 // Agregados comunes a resumen y evolución
 function aggregate(activities) {

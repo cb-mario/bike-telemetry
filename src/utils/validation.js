@@ -1,4 +1,4 @@
-const { HttpError } = require('../middlewares/errorHandler');
+const { HttpError } = require('../errors');
 
 // Validadores compartidos por los controladores
 
@@ -14,6 +14,18 @@ function parseNumber(value, field, { min, max, integer = false, exclusiveMin = f
     throw new HttpError(400, `${field} debe ser ${lower} y como máximo ${max}`);
   }
   return value;
+}
+
+// Identificador numérico de la URL (/:id)
+function parseId(value, message = 'ID no válido') {
+  const id = Number(value);
+  if (!Number.isInteger(id) || id <= 0) throw new HttpError(400, message);
+  return id;
+}
+
+// ?limit= opcional (undefined si no viene)
+function parseLimit(value, { max }) {
+  return value !== undefined ? parseNumber(Number(value), 'limit', { min: 1, max, integer: true }) : undefined;
 }
 
 // ISO 8601: fecha (YYYY-MM-DD) con hora opcional
@@ -51,4 +63,4 @@ function parseDateRange({ from, to }) {
   return range;
 }
 
-module.exports = { parseNumber, parseDate, parseDateRange };
+module.exports = { parseNumber, parseId, parseLimit, parseDate, parseDateRange };

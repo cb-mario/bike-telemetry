@@ -1,14 +1,16 @@
 const PlannedRoute = require('../models/plannedRoute.model');
 const activityService = require('./activity.service');
-const { HttpError } = require('../middlewares/errorHandler');
+const { HttpError } = require('../errors');
 const { parseGpx } = require('./gpx.service');
-const { haversine, segmentElevationGain, simplifyCoords, downsample, round } = require('./track.service');
+const {
+  haversine, segmentElevationGain, simplifyCoords, downsample, MAX_PREVIEW_POINTS,
+} = require('./track.service');
+const { round } = require('../utils/number');
+const { MAX_WAYPOINTS } = require('../utils/plannedRouteValidation');
 
-const PREVIEW_POINTS = 80;
 const MAX_IMPORTED_POINTS = 5000;
 // Puntos de paso generados al importar: uno cada WAYPOINT_STEP_KM, para poder editar la ruta
 const WAYPOINT_STEP_KM = 5;
-const MAX_WAYPOINTS = 200;
 
 // Distancia y desnivel calculados en el servidor a partir del trazado
 function computeMetrics(geometry) {
@@ -22,7 +24,7 @@ function computeMetrics(geometry) {
   };
 }
 
-const previewOf = (geometry) => [simplifyCoords(geometry, PREVIEW_POINTS)];
+const previewOf = (geometry) => [simplifyCoords(geometry, MAX_PREVIEW_POINTS)];
 
 // Listado: sin el trazado completo, con miniatura
 function toSummary({ preview, ...route }) {

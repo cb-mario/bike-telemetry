@@ -1,3 +1,5 @@
+const User = require('../models/user.model');
+const { HttpError } = require('../errors');
 const { ageOn } = require('../utils/profileValidation');
 
 // Estimaciones a partir del perfil (null si faltan datos)
@@ -23,4 +25,32 @@ function toPublicUser(user) {
   return user ? { ...user, estimates: estimatesFor(user) } : null;
 }
 
-module.exports = { estimatesFor, toPublicUser };
+// Regla entre campos: la FC en reposo tiene que ser menor que la máxima
+function assertHrCoherent({ restingHr, maxHr }) {
+  if (restingHr != null && maxHr != null && restingHr >= maxHr) {
+    throw new HttpError(400, 'La FC en reposo debe ser menor que la máxima');
+  }
+}
+
+async function getProfile(userId) {
+  const user = await User.findPublicById(userId);
+  if (!user) throw new HttpError(404, 'Usuario no encontrado');
+  return toPublicUser(user);
+}
+
+// Aplica cambios ya validados (null borra un campo opcional)
+async function updateProfile(userId, changes) {
+  const current = await User.findPublicById(userId);
+  if (!current) throw new HttpError(404, 'Usuario no encontrado');
+  assertHrCoherent({ ...current, ...changes });
+
+  try {
+    return toPublicUser(await User.updateProfile(userId, changes));
+  } catch (err) {
+    // El usuario se ha borrado entre la lectura y la escritura
+    if (err.code === 'P2025') throw new HttpError(404, 'Usuario no encontrado');
+    throw err;
+  }
+}
+
+module.exports = { estimatesFor, toPublicUser, assertHrCoherent, getProfile, updateProfile };

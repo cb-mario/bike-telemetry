@@ -1,12 +1,12 @@
-const jwt = require('jsonwebtoken');
-
 const User = require('../models/user.model');
+const config = require('../config');
 const Activity = require('../models/activity.model');
-const { HttpError } = require('../middlewares/errorHandler');
+const { HttpError } = require('../errors');
 const { encrypt, decrypt } = require('../utils/crypto');
 const { parseActivity, HR_MIN, HR_MAX } = require('../utils/activityValidation');
 const { buildTrack } = require('./track.service');
 const { loginRedirect } = require('../utils/loginTicket');
+const { signPurpose, readPurpose } = require('../utils/signedToken');
 
 const STRAVA_OAUTH = 'https://www.strava.com/oauth';
 const STRAVA_API = 'https://www.strava.com/api/v3';
@@ -22,16 +22,12 @@ const REFRESH_MARGIN_MS = 60 * 1000;
 // Una petición a Strava que tarde más se da por fallida (no deja la petición del usuario colgada)
 const TIMEOUT_MS = 15000;
 
-function config() {
-  return {
-    clientId: process.env.STRAVA_CLIENT_ID,
-    clientSecret: process.env.STRAVA_CLIENT_SECRET,
-    redirectUri: process.env.STRAVA_REDIRECT_URI || 'http://localhost:3000/api/strava/callback',
-    frontendUrl: (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, ''),
-  };
-}
+const STATE_TTL = '10m';
 
-const isConfigured = () => Boolean(config().clientId && config().clientSecret);
+const isConfigured = () => {
+  const { clientId, clientSecret } = config.strava();
+  return Boolean(clientId && clientSecret);
+};
 
 function assertConfigured() {
   if (!isConfigured()) {
@@ -41,22 +37,20 @@ function assertConfigured() {
 
 // --- OAuth ------------------------------------------------------------------
 
-const signState = (payload) => jwt.sign(payload, process.env.JWT_SECRET, { algorithm: 'HS256', expiresIn: '10m' });
-
 // URL de autorización. "state" es un JWT firmado y de vida corta que identifica al usuario:
 // el callback llega desde el navegador sin cabecera Authorization y así además se evita CSRF
 function buildAuthUrl(userId) {
-  return authorizeUrl(signState({ sub: String(userId), purpose: STATE_PURPOSE }));
+  return authorizeUrl(signPurpose(STATE_PURPOSE, { sub: String(userId) }, STATE_TTL));
 }
 
 // URL para "Continuar con Strava" desde la pantalla de login (aún no hay usuario)
 function buildLoginUrl() {
-  return authorizeUrl(signState({ purpose: LOGIN_STATE_PURPOSE }));
+  return authorizeUrl(signPurpose(LOGIN_STATE_PURPOSE, {}, STATE_TTL));
 }
 
 function authorizeUrl(state) {
   assertConfigured();
-  const { clientId, redirectUri } = config();
+  const { clientId, redirectUri } = config.strava();
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
@@ -80,7 +74,7 @@ async function stravaRequest(url, options) {
 }
 
 async function requestToken(params) {
-  const { clientId, clientSecret } = config();
+  const { clientId, clientSecret } = config.strava();
   const { res, data } = await stravaRequest(`${STRAVA_OAUTH}/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -98,14 +92,6 @@ const tokenFields = (data) => ({
   stravaTokenExpiresAt: new Date(data.expires_at * 1000),
 });
 
-const readState = (state) => {
-  try {
-    return jwt.verify(state, process.env.JWT_SECRET, { algorithms: ['HS256'] });
-  } catch {
-    return null;
-  }
-};
-
 const hasActivityScope = (scope) => {
   const granted = String(scope || '').split(',');
   return granted.includes('activity:read_all') || granted.includes('activity:read');
@@ -114,12 +100,12 @@ const hasActivityScope = (scope) => {
 // Procesa la vuelta desde Strava y devuelve la URL del frontend a la que redirigir.
 // El mismo callback sirve para conectar una cuenta existente y para iniciar sesión (según el state)
 async function handleCallback({ code, scope, state, error }) {
-  const payload = state ? readState(state) : null;
+  const payload = readPurpose(state, [STATE_PURPOSE, LOGIN_STATE_PURPOSE]);
   if (payload?.purpose === LOGIN_STATE_PURPOSE) return handleLoginCallback({ code, scope, error });
 
-  const back = (status) => `${config().frontendUrl}/salidas?strava=${status}`;
+  const back = (status) => `${config.frontendUrl()}/salidas?strava=${status}`;
   if (error) return back('denied');
-  if (!code || payload?.purpose !== STATE_PURPOSE) return back('error');
+  if (!code || !payload) return back('error');
   const userId = Number(payload.sub);
 
   // Sin permiso de lectura de actividades la sincronización no puede funcionar
@@ -150,7 +136,7 @@ function profileFromAthlete(athlete = {}) {
 
 // "Continuar con Strava": entra con la cuenta vinculada a ese atleta o crea una nueva
 async function handleLoginCallback({ code, scope, error }) {
-  const front = config().frontendUrl;
+  const front = config.frontendUrl();
   const fail = (status) => `${front}/?strava_login=${status}`;
   if (error) return fail('denied');
   if (!code) return fail('error');
@@ -319,7 +305,13 @@ async function importStreams(userId, activity) {
     time: streams.time?.data?.[i] != null ? start + streams.time.data[i] * 1000 : null,
     hr: streams.heartrate?.data?.[i] != null ? sanitizeHr(streams.heartrate.data[i]) : null,
   }));
-  return Activity.createTrack(activity.id, buildTrack([points], activity.date));
+  try {
+    return await Activity.createTrack(activity.id, buildTrack([points], activity.date));
+  } catch (err) {
+    // Otra petición simultánea ya lo ha guardado
+    if (err.code === 'P2002') return Activity.findTrack(activity.id);
+    throw err;
+  }
 }
 
 async function status(userId) {

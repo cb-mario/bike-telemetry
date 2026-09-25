@@ -1,4 +1,4 @@
-const { HttpError } = require('../middlewares/errorHandler');
+const { HttpError } = require('../errors');
 const { parseNumber, parseDate } = require('./validation');
 
 // Validación de actividades, compartida por la API (manual/GPX) y la sincronización con Strava

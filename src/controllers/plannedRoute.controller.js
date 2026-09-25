@@ -1,56 +1,10 @@
 const plannedRouteService = require('../services/plannedRoute.service');
-const { routeLeg, ROUTING_PROFILES } = require('../services/routing.service');
-const { HttpError } = require('../middlewares/errorHandler');
-const { parseNumber } = require('../utils/validation');
+const { routeLeg } = require('../services/routing.service');
+const { HttpError } = require('../errors');
+const { parseId, parseLimit } = require('../utils/validation');
+const { parseRoute, parseLatLon } = require('../utils/plannedRouteValidation');
 
-const ROUTING_MODES = [...ROUTING_PROFILES, 'straight'];
-const MAX_WAYPOINTS = 200;
-const MAX_GEOMETRY_POINTS = 50000;
-
-function parseId(value) {
-  const id = Number(value);
-  if (!Number.isInteger(id) || id <= 0) throw new HttpError(400, 'ID de ruta no válido');
-  return id;
-}
-
-const isLat = (v) => typeof v === 'number' && Number.isFinite(v) && v >= -90 && v <= 90;
-const isLon = (v) => typeof v === 'number' && Number.isFinite(v) && v >= -180 && v <= 180;
-const isEle = (v) => v === null || (typeof v === 'number' && Number.isFinite(v) && v >= -500 && v <= 9000);
-
-function parsePoints(value, field, { min, max, withElevation }) {
-  if (!Array.isArray(value) || value.length < min || value.length > max) {
-    throw new HttpError(400, `${field} debe tener entre ${min} y ${max} puntos`);
-  }
-  return value.map((p) => {
-    const valid = Array.isArray(p) && isLat(p[0]) && isLon(p[1])
-      && (withElevation ? p.length <= 3 && isEle(p[2] ?? null) : p.length === 2);
-    if (!valid) throw new HttpError(400, `${field} contiene puntos no válidos`);
-    return withElevation ? [p[0], p[1], p[2] ?? null] : [p[0], p[1]];
-  });
-}
-
-// Valida { name, routing, waypoints, geometry }
-function parseRoute(body) {
-  const { name, routing, waypoints, geometry } = body || {};
-  if (typeof name !== 'string' || !name.trim()) throw new HttpError(400, 'El nombre es obligatorio');
-  if (name.trim().length > 100) throw new HttpError(400, 'El nombre no puede superar 100 caracteres');
-  if (!ROUTING_MODES.includes(routing)) throw new HttpError(400, `routing debe ser uno de: ${ROUTING_MODES.join(', ')}`);
-  return {
-    name: name.trim(),
-    routing,
-    waypoints: parsePoints(waypoints, 'waypoints', { min: 2, max: MAX_WAYPOINTS, withElevation: false }),
-    geometry: parsePoints(geometry, 'geometry', { min: 2, max: MAX_GEOMETRY_POINTS, withElevation: true }),
-  };
-}
-
-// "lat,lon" → [lat, lon]
-function parseLatLon(value, field) {
-  const parts = typeof value === 'string' ? value.split(',').map(Number) : [];
-  if (parts.length !== 2 || !isLat(parts[0]) || !isLon(parts[1])) {
-    throw new HttpError(400, `${field} debe tener el formato "lat,lon"`);
-  }
-  return parts;
-}
+const parseRouteId = (value) => parseId(value, 'ID de ruta no válido');
 
 async function leg(req, res) {
   const from = parseLatLon(req.query.from, 'from');
@@ -59,15 +13,11 @@ async function leg(req, res) {
 }
 
 async function list(req, res) {
-  const { limit } = req.query;
-  const options = limit !== undefined
-    ? { limit: parseNumber(Number(limit), 'limit', { min: 1, max: 100, integer: true }) }
-    : {};
-  res.json(await plannedRouteService.list(req.user.id, options));
+  res.json(await plannedRouteService.list(req.user.id, { limit: parseLimit(req.query.limit, { max: 100 }) }));
 }
 
 async function getById(req, res) {
-  res.json(await plannedRouteService.getById(parseId(req.params.id), req.user.id));
+  res.json(await plannedRouteService.getById(parseRouteId(req.params.id), req.user.id));
 }
 
 async function create(req, res) {
@@ -75,11 +25,11 @@ async function create(req, res) {
 }
 
 async function update(req, res) {
-  res.json(await plannedRouteService.update(parseId(req.params.id), req.user.id, parseRoute(req.body)));
+  res.json(await plannedRouteService.update(parseRouteId(req.params.id), req.user.id, parseRoute(req.body)));
 }
 
 async function remove(req, res) {
-  await plannedRouteService.remove(parseId(req.params.id), req.user.id);
+  await plannedRouteService.remove(parseRouteId(req.params.id), req.user.id);
   res.status(204).end();
 }
 
@@ -89,13 +39,12 @@ async function importGpx(req, res) {
 }
 
 async function fromActivity(req, res) {
-  const activityId = Number(req.params.activityId);
-  if (!Number.isInteger(activityId) || activityId <= 0) throw new HttpError(400, 'ID de actividad no válido');
+  const activityId = parseId(req.params.activityId, 'ID de actividad no válido');
   res.status(201).json(await plannedRouteService.fromActivity(req.user.id, activityId));
 }
 
 async function gpx(req, res) {
-  const { filename, content } = await plannedRouteService.exportGpx(parseId(req.params.id), req.user.id);
+  const { filename, content } = await plannedRouteService.exportGpx(parseRouteId(req.params.id), req.user.id);
   res.set('Content-Type', 'application/gpx+xml; charset=utf-8');
   res.set('Content-Disposition', `attachment; filename="${filename}"`);
   res.send(content);

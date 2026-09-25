@@ -1,4 +1,4 @@
-const { HttpError } = require('../middlewares/errorHandler');
+const { HttpError } = require('../errors');
 const { parseNumber, parseDate } = require('./validation');
 
 // Campos editables del perfil (null = borrar el valor)

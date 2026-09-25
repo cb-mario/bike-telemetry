@@ -1,6 +1,6 @@
 const multer = require('multer');
 
-const { HttpError } = require('./errorHandler');
+const { HttpError } = require('../errors');
 
 const MAX_FILE_MB = 15;
 

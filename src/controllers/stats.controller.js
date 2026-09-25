@@ -1,5 +1,5 @@
 const statsService = require('../services/stats.service');
-const { HttpError } = require('../middlewares/errorHandler');
+const { HttpError } = require('../errors');
 const { parseDateRange } = require('../utils/validation');
 
 const PERIODS = ['week', 'month'];

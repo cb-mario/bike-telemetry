@@ -1,17 +1,14 @@
 const activityService = require('../services/activity.service');
-const { analyzeGpx } = require('../services/gpx.service');
-const { HttpError } = require('../middlewares/errorHandler');
-const { parseNumber, parseDateRange } = require('../utils/validation');
+const { HttpError } = require('../errors');
+const {
+  parseNumber, parseId: parseNumericId, parseLimit, parseDateRange,
+} = require('../utils/validation');
 const { parseActivity, SPORT_TYPES } = require('../utils/activityValidation');
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
 
-function parseId(value) {
-  const id = Number(value);
-  if (!Number.isInteger(id) || id <= 0) throw new HttpError(400, 'ID de actividad no válido');
-  return id;
-}
+const parseId = (value) => parseNumericId(value, 'ID de actividad no válido');
 
 const optionalNumber = (value, field, max) => (
   value !== undefined && value !== '' ? parseNumber(Number(value), field, { min: 0, max }) : undefined
@@ -40,7 +37,7 @@ function parseListQuery(query) {
   return {
     ...filters,
     ...parseDateRange(query),
-    limit: limit !== undefined ? parseNumber(Number(limit), 'limit', { min: 1, max: MAX_LIMIT, integer: true }) : DEFAULT_LIMIT,
+    limit: parseLimit(limit, { max: MAX_LIMIT }) ?? DEFAULT_LIMIT,
     offset: offset !== undefined ? parseNumber(Number(offset), 'offset', { min: 0, max: Number.MAX_SAFE_INTEGER, integer: true }) : 0,
   };
 }
@@ -71,38 +68,15 @@ async function update(req, res) {
 // Importa un .gpx (multipart, campo "file"; "title" opcional) y crea la actividad con su track
 async function uploadGpx(req, res) {
   if (!req.file) throw new HttpError(400, 'Adjunta un archivo .gpx en el campo "file"');
-
-  const { name, stats, track, summaryPolyline } = analyzeGpx(req.file.buffer);
-  const title = req.body?.title?.trim() || name?.trim() || `Salida del ${stats.startTime.toISOString().slice(0, 10)}`;
-
-  // Los datos calculados pasan por la misma validación que una actividad manual
-  let data;
-  try {
-    data = parseActivity({
-      title: title.slice(0, 100),
-      date: stats.startTime.toISOString(),
-      distanceKm: stats.distanceKm,
-      durationMin: stats.durationMin,
-      elevationGain: stats.elevationGain,
-      avgHr: stats.avgHr,
-      maxHr: stats.maxHr,
-      maxSpeedKmh: stats.maxSpeedKmh,
-    }, { partial: false });
-  } catch (err) {
-    if (err instanceof HttpError) throw new HttpError(400, `El GPX genera datos no válidos: ${err.message}`);
-    throw err;
-  }
-
-  const activity = await activityService.createFromGpx(req.user.id, { ...data, summaryPolyline }, track);
-  res.status(201).json(activity);
+  const title = typeof req.body?.title === 'string' ? req.body.title : undefined;
+  res.status(201).json(await activityService.importGpx(req.user.id, req.file.buffer, title));
 }
 
 // Sin ?limit devuelve todas; el planificador pide solo las más recientes
 async function routes(req, res) {
-  const { limit } = req.query;
   res.json(await activityService.routes(req.user.id, {
     ...parseDateRange(req.query),
-    limit: limit !== undefined ? parseNumber(Number(limit), 'limit', { min: 1, max: 500, integer: true }) : undefined,
+    limit: parseLimit(req.query.limit, { max: 500 }),
   }));
 }
 

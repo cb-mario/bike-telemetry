@@ -1,5 +1,5 @@
 const { verifyToken } = require('../services/auth.service');
-const { HttpError } = require('./errorHandler');
+const { HttpError } = require('../errors');
 
 // Exige un JWT válido en "Authorization: Bearer <token>" y expone req.user = { id }
 function authMiddleware(req, res, next) {

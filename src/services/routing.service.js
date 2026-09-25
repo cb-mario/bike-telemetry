@@ -1,7 +1,7 @@
-const { HttpError } = require('../middlewares/errorHandler');
+const { HttpError } = require('../errors');
+const { brouterUrl } = require('../config');
 
 // Enrutado ciclista con BRouter (https://brouter.de): sigue carreteras/caminos y devuelve altitud
-const BROUTER_URL = () => (process.env.BROUTER_URL || 'https://brouter.de/brouter').replace(/\/$/, '');
 
 // Perfil de la app → perfil de BRouter
 const PROFILES = { road: 'fastbike', gravel: 'gravel', trekking: 'trekking' };
@@ -13,7 +13,7 @@ async function routeLeg(from, to, routing) {
   if (!profile) throw new HttpError(400, `routing debe ser uno de: ${Object.keys(PROFILES).join(', ')}`);
 
   const lonlats = [from, to].map(([lat, lon]) => `${lon},${lat}`).join('|');
-  const url = `${BROUTER_URL()}?lonlats=${lonlats}&profile=${profile}&alternativeidx=0&format=geojson`;
+  const url = `${brouterUrl()}?lonlats=${lonlats}&profile=${profile}&alternativeidx=0&format=geojson`;
 
   let res;
   try {

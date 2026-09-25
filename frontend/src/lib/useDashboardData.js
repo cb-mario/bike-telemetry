@@ -1,37 +1,18 @@
-import { useEffect, useState } from 'react'
 import { api } from './api'
 import { rangeQuery } from './ranges'
+import { useApiQuery } from './useApiQuery'
 
 // Datos del Resumen que dependen del rango. Mientras recarga, conserva los datos anteriores
 export function useDashboardData(range, refreshKey) {
-  const [data, setData] = useState(null)
-  const [error, setError] = useState('')
-  // Clave de la última petición terminada: si no coincide con la actual, está cargando
-  const [settledKey, setSettledKey] = useState(null)
-  const requestKey = `${range}:${refreshKey}`
-  const loading = settledKey !== requestKey
-
-  useEffect(() => {
-    let cancelled = false
+  const { data, loading, error } = useApiQuery(async () => {
     const { from, period } = rangeQuery(range)
-
-    Promise.all([
+    const [summary, evolution, zones] = await Promise.all([
       api('/stats/summary', { query: { from } }),
       api('/stats/evolution', { query: { from, period } }),
       api('/stats/hr-zones', { query: { from } }),
     ])
-      .then(([summary, evolution, zones]) => {
-        if (cancelled) return
-        setData({ summary, evolution, zones })
-        setError('')
-      })
-      .catch((err) => !cancelled && setError(err.message))
-      .finally(() => !cancelled && setSettledKey(`${range}:${refreshKey}`))
-
-    return () => {
-      cancelled = true
-    }
+    return { summary, evolution, zones }
   }, [range, refreshKey])
 
-  return { data, loading, error }
+  return { data: data ?? null, loading, error }
 }

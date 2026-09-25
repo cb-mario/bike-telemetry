@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router'
 import { useApp } from '../context/AppContext'
 import { api } from '../lib/api'
@@ -9,6 +9,7 @@ import { zoneFor } from '../lib/zones'
 import { RoutePreview } from '../components/RoutePreview'
 import { useDashboardData } from '../lib/useDashboardData'
 import { useOverview } from '../lib/useOverview'
+import { useApiQuery } from '../lib/useApiQuery'
 import { RANGES } from '../lib/ranges'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
@@ -77,15 +78,11 @@ export function SummaryPage() {
 
 // Última salida y ruta planificada más reciente (undefined mientras cargan, null si no hay)
 function useLatest(refreshKey) {
-  const [last, setLast] = useState(undefined)
-  const [next, setNext] = useState(undefined)
-
-  useEffect(() => {
-    api('/activities', { query: { limit: 1 } }).then((r) => setLast(r.data[0] ?? null)).catch(() => setLast(null))
-    api('/planned-routes', { query: { limit: 1 } }).then((r) => setNext(r[0] ?? null)).catch(() => setNext(null))
-  }, [refreshKey])
-
-  return { last, next }
+  const last = useApiQuery(() => api('/activities', { query: { limit: 1 } }).then((r) => r.data[0] ?? null), ['last', refreshKey])
+  const next = useApiQuery(() => api('/planned-routes', { query: { limit: 1 } }).then((r) => r[0] ?? null), ['next', refreshKey])
+  // Un error cuenta como "no hay" para no dejar la tarjeta cargando
+  const settle = (q) => (q.error ? null : q.data)
+  return { last: settle(last), next: settle(next) }
 }
 
 // Trazado grande sobre el fondo del panel; sin GPS, solo inicio y final unidos por una discontinua

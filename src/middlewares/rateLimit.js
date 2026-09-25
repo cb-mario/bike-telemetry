@@ -1,6 +1,6 @@
 const { rateLimit } = require('express-rate-limit');
 
-const { HttpError } = require('./errorHandler');
+const { HttpError } = require('../errors');
 
 const MINUTE = 60 * 1000;
 

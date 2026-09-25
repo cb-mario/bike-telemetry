@@ -1,12 +1,10 @@
 const { DOMParser } = require('@xmldom/xmldom');
 const { gpx: gpxToGeoJson } = require('@tmcw/togeojson');
 
-const { HttpError } = require('../middlewares/errorHandler');
+const { HttpError } = require('../errors');
 const { computeStats, buildTrack, summaryPolyline, haversine } = require('./track.service');
-
-// Lecturas de pulso fuera de este rango se consideran artefactos del sensor
-const HR_VALID_MIN = 40;
-const HR_VALID_MAX = 220;
+// Lecturas de pulso fuera del rango válido se consideran artefactos del sensor
+const { HR_MIN, HR_MAX } = require('../utils/activityValidation');
 
 // --- Parseo -----------------------------------------------------------------
 
@@ -54,7 +52,7 @@ function parseGpx(buffer) {
           lon,
           ele: Number.isFinite(ele) ? ele : null,
           time: Number.isFinite(time) ? time : null,
-          hr: Number.isFinite(hr) && hr >= HR_VALID_MIN && hr <= HR_VALID_MAX ? hr : null,
+          hr: Number.isFinite(hr) && hr >= HR_MIN && hr <= HR_MAX ? hr : null,
         };
       });
       if (points.length >= 2) segments.push(points);

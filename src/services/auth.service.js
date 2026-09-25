@@ -2,8 +2,9 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 const User = require('../models/user.model');
-const { toPublicUser } = require('./profile.service');
-const { HttpError } = require('../middlewares/errorHandler');
+const { jwtSecret } = require('../config');
+const { toPublicUser, assertHrCoherent } = require('./profile.service');
+const { HttpError } = require('../errors');
 const { readLoginTicket } = require('../utils/loginTicket');
 
 // Coste de bcrypt configurable (los tests usan uno bajo para ir rápido)
@@ -18,19 +19,20 @@ const SESSION_PURPOSE = 'session';
 const DUMMY_HASH = bcrypt.hashSync('dummy-password', SALT_ROUNDS);
 
 function signToken(user) {
-  return jwt.sign({ sub: String(user.id), purpose: SESSION_PURPOSE }, process.env.JWT_SECRET, {
+  return jwt.sign({ sub: String(user.id), purpose: SESSION_PURPOSE }, jwtSecret(), {
     algorithm: JWT_ALGORITHM,
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   });
 }
 
 function verifyToken(token) {
-  const payload = jwt.verify(token, process.env.JWT_SECRET, { algorithms: [JWT_ALGORITHM] });
+  const payload = jwt.verify(token, jwtSecret(), { algorithms: [JWT_ALGORITHM] });
   if (payload.purpose !== SESSION_PURPOSE) throw new jwt.JsonWebTokenError('No es un token de sesión');
   return payload;
 }
 
 async function register(email, password, profile = {}) {
+  assertHrCoherent(profile);
   if (await User.findByEmail(email)) {
     throw new HttpError(409, 'El email ya está registrado');
   }

@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useApp } from '../context/AppContext'
 import { connectStrava, disconnectStrava, getStravaStatus, syncStrava } from '../lib/strava'
+import { useApiQuery } from '../lib/useApiQuery'
 import { Button } from './ui/Button'
 
 function timeAgo(iso) {
@@ -15,12 +16,9 @@ function timeAgo(iso) {
 // Botón "Conectar con Strava" o "Sincronizar con Strava" según el estado de la cuenta
 export function StravaControls() {
   const { refresh, toast, refreshKey } = useApp()
-  const [status, setStatus] = useState(null)
+  const { data, error, setData: setStatus } = useApiQuery(getStravaStatus, [refreshKey])
+  const status = error ? null : data ?? null
   const [busy, setBusy] = useState(false)
-
-  useEffect(() => {
-    getStravaStatus().then(setStatus).catch(() => setStatus(null))
-  }, [refreshKey])
 
   async function handleConnect() {
     setBusy(true)

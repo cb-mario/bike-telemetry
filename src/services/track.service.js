@@ -1,4 +1,5 @@
 const polyline = require('../utils/polyline');
+const { round } = require('../utils/number');
 
 // Cálculos y almacenamiento de tracks GPS, compartidos por la importación GPX y Strava
 
@@ -28,7 +29,6 @@ function extent(values) {
   }
   return [min, max];
 }
-const round = (value, decimals) => Math.round(value * 10 ** decimals) / 10 ** decimals;
 
 // Distancia en metros entre dos puntos (fórmula del haversine)
 function haversine(a, b) {
@@ -186,6 +186,6 @@ function simplifyCoords(coords, max) {
 }
 
 module.exports = {
-  segmentElevationGain, haversine, extent, round, downsample, computeStats, buildTrack, summaryPolyline, simplifyCoords,
+  segmentElevationGain, haversine, extent, downsample, computeStats, buildTrack, summaryPolyline, simplifyCoords,
   MAX_PREVIEW_POINTS,
 };

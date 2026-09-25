@@ -1,10 +1,4 @@
-// Error con código HTTP asociado, para lanzarlo desde servicios y controladores
-class HttpError extends Error {
-  constructor(status, message) {
-    super(message);
-    this.status = status;
-  }
-}
+const { HttpError } = require('../errors');
 
 // Rutas no encontradas → 404 con formato JSON uniforme
 function notFound(req, res) {
@@ -28,4 +22,4 @@ function errorHandler(err, req, res, next) {
   res.status(status).json({ error: message });
 }
 
-module.exports = { HttpError, notFound, errorHandler };
+module.exports = { notFound, errorHandler };

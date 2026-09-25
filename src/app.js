@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 
+const { frontendUrl } = require('./config');
 const healthRoutes = require('./routes/health.routes');
 const authRoutes = require('./routes/auth.routes');
 const activityRoutes = require('./routes/activity.routes');
@@ -19,7 +20,7 @@ if (process.env.TRUST_PROXY) app.set('trust proxy', Number(process.env.TRUST_PRO
 // Middlewares globales
 app.use(helmet());
 // Solo el frontend puede llamar a la API desde el navegador (nunca "*")
-app.use(cors({ origin: process.env.CORS_ORIGIN || process.env.FRONTEND_URL || 'http://localhost:5173' }));
+app.use(cors({ origin: process.env.CORS_ORIGIN || frontendUrl() }));
 // Las rutas planificadas envían su trazado completo (hasta 2 MB); el resto, el límite por defecto (100 kB)
 app.use('/api/planned-routes', express.json({ limit: '2mb' }));
 app.use(express.json());

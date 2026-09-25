@@ -1,7 +1,10 @@
 require('dotenv').config({ quiet: true });
 
-if (!process.env.JWT_SECRET) {
-  console.error('Falta la variable de entorno JWT_SECRET (ver .env.example)');
+const { configProblems } = require('./config');
+
+const problems = configProblems();
+if (problems.length) {
+  console.error(`Configuración incompleta (ver .env.example):\n- ${problems.join('\n- ')}`);
   process.exit(1);
 }
 

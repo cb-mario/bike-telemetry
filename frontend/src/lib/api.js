@@ -31,7 +31,8 @@ export function setUnauthorizedHandler(handler) {
   onUnauthorized = handler
 }
 
-export async function api(path, { method = 'GET', body, query } = {}) {
+// `raw: true` devuelve la Response tal cual si va bien (descargas); los errores se tratan igual
+export async function api(path, { method = 'GET', body, query, raw = false } = {}) {
   const url = new URL(`/api${path}`, window.location.origin)
   for (const [key, value] of Object.entries(query ?? {})) {
     if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, value)
@@ -55,6 +56,7 @@ export async function api(path, { method = 'GET', body, query } = {}) {
   }
 
   if (res.status === 204) return null
+  if (raw && res.ok) return res
   const data = await res.json().catch(() => null)
 
   // El proxy de Vite responde 502/503/504 sin cuerpo JSON cuando el backend no está arrancado
