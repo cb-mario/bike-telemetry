@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { cn } from 'cn'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SPORT_TYPES } from '../lib/sportTypes'
+import { Icon } from './ui/Icon'
 import { DATE_FILTERS, DISTANCE_FILTERS, ELEVATION_FILTERS, EMPTY_FILTERS, hasActiveFilters } from '../lib/routeFilters'
 
 // Filtro desplegable (shadcn/Base UI). La opción "cualquiera" usa value null, que es como
@@ -52,10 +53,7 @@ export function RouteFilters({ filters, onChange }) {
     <div className="flex flex-wrap items-center gap-2">
       <label className="relative min-w-56 flex-1 sm:max-w-xs">
         <span className="sr-only">Buscar por nombre</span>
-        <svg viewBox="0 0 24 24" className="pointer-events-none absolute top-1/2 left-3 z-10 size-4 -translate-y-1/2 text-zinc-500"
-          fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden>
-          <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
-        </svg>
+        <Icon name="search" className="pointer-events-none absolute top-1/2 left-3 z-10 size-4 -translate-y-1/2 text-zinc-500" />
         <input type="search" value={text} onChange={(e) => setText(e.target.value)} placeholder="Buscar ruta…"
           className="h-9 w-full rounded-lg border border-zinc-800 bg-zinc-900 pr-3 pl-9 text-sm text-zinc-100
             transition-colors duration-150 placeholder:text-zinc-500 hover:border-zinc-600 focus:border-brand-2/70 focus:outline-none focus:ring-2 focus:ring-brand-2/20" />

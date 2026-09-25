@@ -8,6 +8,7 @@ import {
 import { useAuth } from '../context/AuthContext'
 import { useApp } from '../context/AppContext'
 import { Dialog } from './ui/Dialog'
+import { Icon } from './ui/Icon'
 import { Logo } from './Logo'
 import { Avatar } from './Avatar'
 import { displayName } from '../lib/user'
@@ -18,19 +19,10 @@ import { useWindowFileDrag } from '../lib/useWindowFileDrag'
 import { gpxHasTimes, importRouteGpx } from '../lib/planner'
 
 const SECTIONS = [
-  { to: '/', label: 'Resumen', icon: 'M4 13h4v7H4zM10 4h4v16h-4zM16 9h4v11h-4z', end: true },
-  { to: '/salidas', label: 'Salidas', icon: 'M5 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm14 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM5 15l4-7h5l5 7M9 8l3 7h-7M12 5h3' },
-  { to: '/rutas', label: 'Rutas', icon: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Zm0 0v14m6-12v14' },
+  { to: '/', label: 'Resumen', icon: 'summary', end: true },
+  { to: '/salidas', label: 'Salidas', icon: 'bike' },
+  { to: '/rutas', label: 'Rutas', icon: 'map' },
 ]
-
-function Icon({ d, className = 'size-4' }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.75"
-      strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d={d} />
-    </svg>
-  )
-}
 
 // Estructura común: navegación fija (arriba en escritorio, abajo en móvil), modal y avisos
 export function AppShell() {
@@ -66,7 +58,7 @@ export function AppShell() {
                 {/* La sección activa lleva el icono en el color de marca */}
                 {({ isActive }) => (
                   <>
-                    <Icon d={s.icon} className={cn('size-4 transition-colors duration-150', isActive && 'text-brand')} />
+                    <Icon name={s.icon} className={cn('size-4 transition-colors duration-150', isActive && 'text-brand')} />
                     {s.label}
                   </>
                 )}
@@ -120,7 +112,7 @@ export function AppShell() {
                 ${isActive ? 'text-zinc-50 before:opacity-100' : 'text-zinc-500 before:opacity-0'}`}>
               {({ isActive }) => (
                 <>
-                  <Icon d={s.icon} className={cn('size-5', isActive && 'text-brand')} />
+                  <Icon name={s.icon} className={cn('size-5', isActive && 'text-brand')} />
                   {s.label}
                 </>
               )}

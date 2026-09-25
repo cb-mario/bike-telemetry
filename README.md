@@ -45,6 +45,7 @@ Las integraciones son opcionales: sin credenciales de Strava o Google la app fun
 |---|---|
 | `npm run dev` | Backend con recarga automática |
 | `npm test` | Tests del backend (usan una base de datos aparte) |
+| `npm run lint` | Linter del backend (oxlint) |
 | `npm run db:migrate` | Aplica las migraciones de Prisma |
 | `npm run db:studio` | Explorador de la base de datos |
 | `cd frontend && npm run build` | Build de producción del frontend |

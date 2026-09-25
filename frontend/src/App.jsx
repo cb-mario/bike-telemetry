@@ -2,20 +2,22 @@ import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 import { useAuth } from './context/AuthContext'
 import { AppProvider } from './context/AppContext'
-import { AuthPage } from './pages/AuthPage'
 import { AppShell } from './components/AppShell'
 import { SummaryPage } from './pages/SummaryPage'
 import { RidesPage } from './pages/RidesPage'
 import { RoutesLibraryPage } from './pages/RoutesLibraryPage'
-import { ProfilePage } from './pages/ProfilePage'
-import { LandingPage } from './pages/LandingPage'
-import { ProviderLoginPage } from './pages/ProviderLoginPage'
 import { Backdrop } from './components/Backdrop'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
-// Las páginas con mapa (Leaflet) se cargan solo al abrirlas
-const ActivityDetailPage = lazy(() => import('./pages/ActivityDetailPage').then((m) => ({ default: m.ActivityDetailPage })))
-const RouteEditorPage = lazy(() => import('./pages/RouteEditorPage').then((m) => ({ default: m.RouteEditorPage })))
+// Carga diferida: páginas con mapa (Leaflet) y las que no se usan a diario (acceso, landing, perfil),
+// para que el paquete inicial lleve solo el panel
+const page = (load, name) => lazy(() => load().then((m) => ({ default: m[name] })))
+const ActivityDetailPage = page(() => import('./pages/ActivityDetailPage'), 'ActivityDetailPage')
+const RouteEditorPage = page(() => import('./pages/RouteEditorPage'), 'RouteEditorPage')
+const AuthPage = page(() => import('./pages/AuthPage'), 'AuthPage')
+const LandingPage = page(() => import('./pages/LandingPage'), 'LandingPage')
+const ProviderLoginPage = page(() => import('./pages/ProviderLoginPage'), 'ProviderLoginPage')
+const ProfilePage = page(() => import('./pages/ProfilePage'), 'ProfilePage')
 
 function PageFallback() {
   return (
@@ -42,12 +44,14 @@ export default function App() {
       <BrowserRouter>
         <Backdrop />
         <TooltipProvider delay={250}>
-          <Routes>
-            <Route path="inicio" element={<LandingPage />} />
-            <Route path="registro" element={<AuthPage initialMode="register" />} />
-            <Route path="entrar/:provider" element={<ProviderLoginPage />} />
-            <Route path="*" element={<AuthPage />} />
-          </Routes>
+          <Suspense fallback={<PageFallback />}>
+            <Routes>
+              <Route path="inicio" element={<LandingPage />} />
+              <Route path="registro" element={<AuthPage initialMode="register" />} />
+              <Route path="entrar/:provider" element={<ProviderLoginPage />} />
+              <Route path="*" element={<AuthPage />} />
+            </Routes>
+          </Suspense>
         </TooltipProvider>
       </BrowserRouter>
     )

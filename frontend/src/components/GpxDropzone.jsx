@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { api } from '../lib/api'
 import { FormError } from './ui/Field'
 import { Spinner } from './ui/Spinner'
+import { Icon } from './ui/Icon'
 
 const MAX_MB = 15
 
@@ -93,10 +94,7 @@ export function GpxDropzone({ initialFile, onInitialFileUsed, onImported }) {
           <>
             <div className={`flex size-12 items-center justify-center rounded-full transition-all duration-200
               ${dragging ? 'bg-brand text-brand-ink' : 'bg-zinc-800/80 text-zinc-300 group-hover:text-zinc-100'}`}>
-              <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.75"
-                strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M12 16V4m0 0-4 4m4-4 4 4M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
-              </svg>
+              <Icon name="upload" className="size-5" />
             </div>
             <div>
               <p className="text-sm font-medium text-zinc-100">
