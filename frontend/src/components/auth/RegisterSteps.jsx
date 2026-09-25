@@ -121,11 +121,11 @@ export function RegisterSteps() {
         <div className="flex gap-1.5" aria-hidden>
           {STEPS.map((s, i) => (
             <div key={s.title} className="h-1 flex-1 overflow-hidden rounded-full bg-zinc-800">
-              <div className={`h-full rounded-full bg-linear-to-r from-brand to-brand-2 transition-transform duration-500 ease-out origin-left ${i <= step ? 'scale-x-100' : 'scale-x-0'}`} />
+              <div className={`h-full rounded-full bg-brand-2 transition-transform duration-500 ease-out origin-left ${i <= step ? 'scale-x-100' : 'scale-x-0'}`} />
             </div>
           ))}
         </div>
-        <p className="mt-3 text-xs font-medium tracking-wider text-zinc-400 uppercase">
+        <p className="mt-3 text-xs text-zinc-400 tabular-nums">
           Paso {step + 1} de {STEPS.length}{STEPS[step].optional && ' · opcional'}
         </p>
       </div>
@@ -148,7 +148,7 @@ export function RegisterSteps() {
                 {(id) => <Input id={id} type="date" max={todayInput()} {...bind('birthDate')} />}
               </Field>
               <div className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium tracking-wider text-zinc-400 uppercase">Sexo</span>
+                <span className="text-[13px] font-medium text-zinc-300">Sexo</span>
                 <SegmentedControl label="Sexo" options={[...SEX_OPTIONS, { value: '', label: 'Prefiero no decirlo' }]}
                   value={f.sex} onChange={(sex) => setF((prev) => ({ ...prev, sex }))} />
               </div>

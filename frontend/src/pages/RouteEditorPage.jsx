@@ -17,6 +17,7 @@ import { Button } from '../components/ui/Button'
 import { SegmentedControl } from '../components/ui/SegmentedControl'
 import { Label } from '../components/ui/Text'
 import { Spinner } from '../components/ui/Spinner'
+import { Icon } from '../components/ui/Icon'
 
 let nextId = 1
 const waypoint = (lat, lon) => ({ id: nextId++, lat, lon })
@@ -194,7 +195,7 @@ export function RouteEditorPage() {
         {geometry.length > 1 && (
           <>
             <Polyline positions={geometry.map(([lat, lon]) => [lat, lon])} interactive={false}
-              pathOptions={{ color: THEME.glow, weight: 10, opacity: 0.18 }} />
+              pathOptions={{ color: THEME.casing, weight: 8, opacity: 0.6 }} />
             <Polyline positions={geometry.map(([lat, lon]) => [lat, lon])} interactive={false}
               pathOptions={{ color: THEME.route, weight: 4, opacity: 0.95, dashArray: loading ? '6 8' : null }} />
           </>
@@ -207,11 +208,11 @@ export function RouteEditorPage() {
       </BaseMap>
 
       {/* Panel: flotante en escritorio, debajo del mapa en móvil */}
-      <aside className="z-[500] flex flex-col gap-4 border-t border-zinc-800 bg-zinc-900/80 p-4 backdrop-blur-md
-        lg:absolute lg:top-4 lg:left-4 lg:max-h-[calc(100%-2rem)] lg:w-[23rem] lg:overflow-y-auto lg:rounded-2xl lg:border lg:shadow-2xl lg:shadow-black/40">
+      <aside className="z-[500] flex flex-col gap-4 border-t border-zinc-800 bg-zinc-900/95 p-4 backdrop-blur-sm
+        lg:absolute lg:top-4 lg:left-4 lg:max-h-[calc(100%-2rem)] lg:w-[23rem] lg:overflow-y-auto lg:rounded-xl lg:border lg:shadow-[0_12px_32px_-8px_rgb(0_0_0/0.55)]">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <Link to="/rutas" className="text-xs text-zinc-400 transition-colors hover:text-zinc-100">← Rutas</Link>
+            <Link to="/rutas" className="inline-flex items-center gap-1 text-xs text-zinc-400 transition-colors hover:text-zinc-100"><Icon name="arrowLeft" className="size-3.5" />Rutas</Link>
             <h1 className="mt-1 text-lg font-semibold tracking-tight text-zinc-100">
               {editingId ? 'Editar ruta' : 'Nueva ruta'}
             </h1>
@@ -225,7 +226,7 @@ export function RouteEditorPage() {
           <Label as="span">Nombre</Label>
           <input value={name} onChange={(e) => { setName(e.target.value); setDirty(true) }} maxLength={100}
             placeholder="Ej. Vuelta por la sierra"
-            className="h-9 rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 text-sm text-zinc-100 placeholder:text-zinc-600 transition-all duration-200 hover:border-zinc-700 focus:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-series/40" />
+            className="h-9 rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 text-sm text-zinc-100 placeholder:text-zinc-500 transition-colors duration-150 hover:border-zinc-700 focus:border-brand-2/70 focus:outline-none focus:ring-2 focus:ring-brand-2/20" />
         </label>
 
         <div className="flex flex-col gap-1.5">
@@ -250,8 +251,8 @@ export function RouteEditorPage() {
             {eta && <p className="-mt-2 text-[11px] text-zinc-500">Estimado a tu velocidad media ({formatNumber(avgSpeed, 1)} km/h)</p>}
             {loading && <p className="flex items-center gap-2 text-xs text-zinc-400"><Spinner className="size-3" /> Calculando ruta…</p>}
             {error && (
-              <p role="alert" className="text-xs text-zinc-300">
-                <span aria-hidden className="text-critical">● </span>{error}. Ese tramo se muestra en línea recta.
+              <p role="alert" className="flex items-start gap-1.5 text-xs text-zinc-300">
+                <Icon name="alert" className="mt-px size-3.5 shrink-0 text-critical" /><span>{error}. Ese tramo se muestra en línea recta.</span>
               </p>
             )}
 

@@ -14,6 +14,7 @@ import { OverviewCards } from '../components/OverviewCards'
 import { EvolutionChart } from '../components/EvolutionChart'
 import { HrZonesCard } from '../components/HrZonesCard'
 import { PageHeader } from '../components/PageHeader'
+import { Icon } from '../components/ui/Icon'
 
 export function SummaryPage() {
   const { refreshKey, refresh } = useApp()
@@ -66,11 +67,11 @@ function Shortcuts({ refreshKey }) {
   if (last === undefined || next === undefined) return null
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      <ShortcutCard to={last ? `/salidas/${last.id}` : '/salidas'} eyebrow="Última salida"
+      <ShortcutCard to={last ? `/salidas/${last.id}` : '/salidas'} kind="Última salida"
         title={last?.title ?? 'Aún no hay salidas'}
         meta={last ? `${formatWeekdayDate(last.date)} · ${formatNumber(last.distanceKm, 1)} km` : 'Sube un GPX o sincroniza Strava'}
         preview={last?.routePreview} />
-      <ShortcutCard to={next ? `/rutas/${next.id}` : '/rutas/nueva'} eyebrow="Próxima ruta"
+      <ShortcutCard to={next ? `/rutas/${next.id}` : '/rutas/nueva'} kind="Próxima ruta"
         title={next?.name ?? 'Planifica tu próxima ruta'}
         meta={next ? `${formatNumber(next.distanceKm, 1)} km${next.elevationGain != null ? ` · ${formatNumber(next.elevationGain)} m` : ''}` : 'Dibújala en el mapa y llévala al ciclocomputador'}
         preview={next?.preview} />
@@ -78,18 +79,20 @@ function Shortcuts({ refreshKey }) {
   )
 }
 
-function ShortcutCard({ to, eyebrow, title, meta, preview }) {
+// El tipo de acceso va en la línea de detalle, no como antetítulo
+function ShortcutCard({ to, kind, title, meta, preview }) {
   return (
-    <Link to={to} className="group flex items-center gap-4 rounded-xl border border-zinc-800 bg-zinc-900/70 p-4 backdrop-blur-md transition-all duration-200 hover:border-zinc-700 focus-visible:outline-2 focus-visible:outline-series">
-      <span className="flex size-16 shrink-0 items-center justify-center rounded-lg bg-zinc-950/60">
-        {preview ? <RoutePreview segments={preview} width={64} height={64} padding={8} /> : <span aria-hidden className="text-xl text-zinc-600">+</span>}
+    <Link to={to} className="group flex items-center gap-4 rounded-xl border border-zinc-800 bg-zinc-900 p-3 pr-4 transition-colors duration-150 hover:border-zinc-600 focus-visible:outline-2 focus-visible:outline-brand-2">
+      <span className="flex size-14 shrink-0 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-950/60 text-zinc-500">
+        {preview ? <RoutePreview segments={preview} width={56} height={56} padding={8} /> : <Icon name="plus" className="size-5" />}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-xs font-medium tracking-wider text-zinc-400 uppercase">{eyebrow}</span>
-        <span className="mt-1 block truncate text-sm font-medium text-zinc-100">{title}</span>
-        <span className="mt-0.5 block truncate text-xs text-zinc-500">{meta}</span>
+        <span className="block truncate text-sm font-medium text-zinc-100">{title}</span>
+        <span className="mt-0.5 block truncate text-xs text-zinc-400">
+          <span className="text-zinc-300">{kind}</span> · {meta}
+        </span>
       </span>
-      <span aria-hidden className="text-zinc-600 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-zinc-300">→</span>
+      <Icon name="chevronRight" className="size-4 shrink-0 text-zinc-500 transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-zinc-200" />
     </Link>
   )
 }

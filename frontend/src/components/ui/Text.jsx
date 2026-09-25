@@ -6,9 +6,9 @@ export function Label({ as: Tag = 'p', className = '', ...props }) {
 }
 
 // Cifra destacada, con unidad opcional más discreta
-export function Metric({ value, unit, className = '' }) {
+export function Metric({ value, unit, size = 'text-3xl', className = '' }) {
   return (
-    <p className={`text-3xl font-semibold tracking-tight text-zinc-100 ${className}`}>
+    <p className={`${size} font-semibold tracking-tight text-zinc-100 tabular-nums ${className}`}>
       {value}
       {unit && <> <span className="ml-0.5 text-base font-normal tracking-normal text-zinc-400">{unit}</span></>}
     </p>

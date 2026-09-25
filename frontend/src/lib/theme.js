@@ -12,6 +12,6 @@ export const THEME = {
   elev: '#c98500',
   hr: '#d55181',
   route: '#4f9dff',  // trazado sobre el mapa oscuro: un punto más luminoso que dist
-  glow: '#22d3ee',
+  casing: '#0a1024', // contorno oscuro bajo el trazado para separarlo del mapa
   rides: '#94a3cc',
 }

@@ -1,11 +1,12 @@
 import { Spinner } from './Spinner'
 
 const VARIANTS = {
-  primary: 'bg-linear-to-r from-brand to-brand-2 text-white shadow-lg shadow-brand/25 hover:-translate-y-px hover:shadow-xl hover:shadow-brand/35 hover:brightness-110',
-  secondary: 'border border-zinc-700/70 bg-zinc-900/70 text-zinc-100 backdrop-blur-md hover:border-brand/50 hover:bg-zinc-800/80',
+  primary: 'bg-brand text-white shadow-[inset_0_1px_0_0_rgb(255_255_255/0.14),0_1px_2px_0_rgb(0_0_0/0.3)] hover:bg-brand-hover',
+  secondary: 'border border-zinc-700 bg-zinc-900 text-zinc-100 hover:border-zinc-600 hover:bg-zinc-800',
   ghost: 'text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-100',
   danger: 'text-critical hover:bg-critical/10',
-  strava: 'bg-strava text-white shadow-sm hover:bg-[#ff5d1a] hover:shadow-md hover:shadow-strava/25',
+  destructive: 'bg-critical/15 text-critical ring-1 ring-critical/40 ring-inset hover:bg-critical/25',
+  strava: 'bg-strava text-white shadow-[inset_0_1px_0_0_rgb(255_255_255/0.16)] hover:bg-[#e54400]',
 }
 
 const SIZES = {
@@ -13,18 +14,18 @@ const SIZES = {
   md: 'h-9 px-4 text-sm',
 }
 
-// Botón con microinteracciones (hover suave, pulsación) y estado de carga
+// Botón con respuesta al pulsar y estado de carga. Con `as` (p. ej. Link) se pinta como enlace con el mismo estilo
 export function Button({
-  variant = 'primary', size = 'md', loading = false, disabled, className = '', type = 'button', children, ...props
+  as: Tag = 'button', variant = 'primary', size = 'md', loading = false, disabled, className = '', type = 'button', children, ...props
 }) {
+  const buttonProps = Tag === 'button' ? { type, disabled: disabled || loading } : {}
   return (
-    <button
-      type={type}
-      disabled={disabled || loading}
+    <Tag
+      {...buttonProps}
       aria-busy={loading || undefined}
       className={`relative inline-flex items-center justify-center gap-2 rounded-lg font-medium
-        transition-all duration-200 ease-out active:scale-[0.97]
-        focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-series
+        transition-colors duration-150 ease-out active:translate-y-px
+        focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-2
         disabled:pointer-events-none disabled:opacity-50 ${VARIANTS[variant]} ${SIZES[size]} ${className}`}
       {...props}
     >
@@ -35,6 +36,6 @@ export function Button({
           <Spinner />
         </span>
       )}
-    </button>
+    </Tag>
   )
 }

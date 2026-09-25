@@ -30,15 +30,23 @@ export function RideCard({ ride: r, zones, index = 0 }) {
   const zone = zoneFor(r.avgHr, zones)
   return (
     <Card as="li" style={{ '--i': index % 12 }}
-      className="group overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-brand/40 hover:shadow-[0_24px_48px_-24px_rgb(59_130_246/0.55)]">
-      <Link to={`/salidas/${r.id}`} className="flex h-full flex-col outline-none focus-visible:ring-2 focus-visible:ring-series/60">
-        {/* Miniatura del trazado sobre una retícula tenue, como un mini-mapa */}
-        <div className="relative h-32 border-b border-zinc-800 bg-zinc-950/60 bg-[linear-gradient(rgb(39_39_42/0.35)_1px,transparent_1px),linear-gradient(90deg,rgb(39_39_42/0.35)_1px,transparent_1px)] bg-[size:16px_16px]">
+      className="group overflow-hidden transition-colors duration-150 hover:border-zinc-600">
+      <Link to={`/salidas/${r.id}`} className="flex h-full flex-col outline-none focus-visible:ring-2 focus-visible:ring-brand-2/60">
+        {/* Miniatura del trazado */}
+        <div className="relative h-32 border-b border-zinc-800 bg-zinc-950/50">
           {r.routePreview ? (
             <RoutePreview segments={r.routePreview} width={320} height={128} padding={14} markers
-              className="size-full transition-transform duration-300 group-hover:scale-[1.03]" />
+              className="size-full" />
           ) : (
-            <p className="flex size-full items-center justify-center text-xs text-zinc-600">Sin recorrido GPS</p>
+            <div className="flex size-full flex-col items-center justify-center gap-2 text-xs text-zinc-500">
+              {/* Sin trazado: solo inicio y final, unidos por una línea discontinua */}
+              <svg viewBox="0 0 96 12" className="h-3 w-24" aria-hidden>
+                <path d="M6 6h84" className="stroke-zinc-700" strokeWidth="1.5" strokeDasharray="3 4" strokeLinecap="round" />
+                <circle cx="6" cy="6" r="3" className="fill-zinc-600" />
+                <circle cx="90" cy="6" r="3" className="fill-zinc-600" />
+              </svg>
+              Sin recorrido GPS
+            </div>
           )}
           <div className="absolute top-3 left-3 flex gap-1.5">
             <Chip>{sportLabel(r.sportType)}</Chip>
@@ -48,10 +56,10 @@ export function RideCard({ ride: r, zones, index = 0 }) {
 
         <div className="flex flex-1 flex-col gap-4 p-5">
           <div className="min-w-0">
-            <p className="text-xs font-medium tracking-wider text-zinc-400 uppercase">{formatWeekdayDate(r.date)}</p>
-            <h3 className="mt-1 truncate text-base font-medium text-zinc-100" title={r.title}>{r.title}</h3>
+            <h3 className="truncate text-base font-medium text-zinc-100 group-hover:text-white" title={r.title}>{r.title}</h3>
+            <p className="mt-0.5 text-sm text-zinc-400 first-letter:uppercase">{formatWeekdayDate(r.date)}</p>
           </div>
-          <p className="text-3xl font-semibold tracking-tight text-zinc-100">
+          <p className="text-3xl font-semibold tracking-tight text-zinc-100 tabular-nums">
             {formatNumber(r.distanceKm, 1)}{' '}
             <span className="ml-0.5 text-base font-normal tracking-normal text-zinc-400">km</span>
           </p>

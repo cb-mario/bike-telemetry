@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext'
 import { formatDuration, formatKm, formatNumber } from '../lib/format'
 // Un tono por zona, de frío a cálido (validado para daltonismo sobre las tarjetas)
 import { ZONE_BG } from '../lib/zones'
+import { Icon } from './ui/Icon'
 
 
 const SOURCE_LABEL = {
@@ -151,7 +152,7 @@ function MaxHrEditor({ data, onSaved }) {
         )}
         <Button variant="ghost" onClick={() => setEditing(false)} disabled={saving}>Cancelar</Button>
       </div>
-      {error && <p role="alert" className="mt-2 text-xs text-ink"><span aria-hidden className="text-critical">● </span>{error}</p>}
+      {error && <p role="alert" className="mt-2 flex items-start gap-1.5 text-xs text-ink"><Icon name="alert" className="mt-px size-3.5 shrink-0 text-critical" />{error}</p>}
     </form>
   )
 }

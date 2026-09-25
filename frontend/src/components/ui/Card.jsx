@@ -1,8 +1,8 @@
-// Tarjeta modular: fondo translúcido, borde sutil y desenfoque
+// Tarjeta modular: superficie sólida, borde fino y un filo de luz arriba
 export function Card({ as: Tag = 'section', className = '', ...props }) {
   return (
     <Tag
-      className={`min-w-0 rounded-xl border border-zinc-800 bg-zinc-900/70 shadow-[inset_0_1px_0_0_rgb(255_255_255/0.04)] backdrop-blur-md ${className}`}
+      className={`min-w-0 rounded-xl border border-zinc-800 bg-zinc-900 shadow-[inset_0_1px_0_0_rgb(255_255_255/0.04),0_1px_2px_0_rgb(0_0_0/0.25)] ${className}`}
       {...props}
     />
   )

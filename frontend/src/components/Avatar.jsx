@@ -1,9 +1,9 @@
 import { initials } from '../lib/user'
 
-// Avatar con iniciales sobre el degradado de marca
+// Avatar con iniciales, en la tinta de las superficies
 export function Avatar({ user, size = 'size-8 text-xs' }) {
   return (
-    <span aria-hidden className={`inline-flex shrink-0 items-center justify-center rounded-full bg-linear-to-br from-brand to-brand-2 font-semibold text-white shadow-md shadow-brand/30 ring-2 ring-surface ${size}`}>
+    <span aria-hidden className={`inline-flex shrink-0 items-center justify-center rounded-full bg-zinc-700 font-semibold text-zinc-50 ring-1 ring-zinc-600 ${size}`}>
       {initials(user)}
     </span>
   )

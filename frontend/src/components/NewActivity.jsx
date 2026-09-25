@@ -6,6 +6,7 @@ import { Button } from './ui/Button'
 import { SegmentedControl } from './ui/SegmentedControl'
 import { Label } from './ui/Text'
 import { formatDate, formatDuration, formatKm, formatNumber } from '../lib/format'
+import { Icon } from './ui/Icon'
 
 const MODES = [
   { value: 'gpx', label: 'Importar GPX' },
@@ -54,7 +55,7 @@ function ImportSummary({ activity: a, onAnother, onClose }) {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-950/40 p-3">
-        <span className="flex size-8 items-center justify-center rounded-full bg-series/15 text-series" aria-hidden>✓</span>
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-zone-2/15 text-zone-2"><Icon name="check" strokeWidth={2} /></span>
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-zinc-100">{a.title}</p>
           <p className="text-xs text-zinc-500">Importada · {formatDate(a.date)}</p>

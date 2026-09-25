@@ -1,7 +1,7 @@
 // Selector de opciones tipo iOS (radiogroup accesible)
 export function SegmentedControl({ options, value, onChange, label }) {
   return (
-    <div role="radiogroup" aria-label={label} className="inline-flex rounded-lg border border-zinc-800 bg-zinc-900/70 p-0.5 backdrop-blur-md">
+    <div role="radiogroup" aria-label={label} className="inline-flex rounded-lg border border-zinc-800 bg-zinc-950/60 p-0.5">
       {options.map((option) => {
         const selected = option.value === value
         return (
@@ -11,9 +11,9 @@ export function SegmentedControl({ options, value, onChange, label }) {
             role="radio"
             aria-checked={selected}
             onClick={() => onChange(option.value)}
-            className={`rounded-md px-3 py-1 text-xs font-medium whitespace-nowrap transition-all duration-200
-              focus-visible:outline-2 focus-visible:outline-series
-              ${selected ? 'bg-brand/20 text-white shadow-sm ring-1 ring-brand/40' : 'text-zinc-400 hover:text-zinc-100'}`}
+            className={`rounded-md px-3 py-1 text-xs font-medium whitespace-nowrap transition-colors duration-150
+              focus-visible:outline-2 focus-visible:outline-brand-2
+              ${selected ? 'bg-zinc-700 text-zinc-50 shadow-[0_1px_2px_0_rgb(0_0_0/0.35)]' : 'text-zinc-400 hover:text-zinc-100'}`}
           >
             {option.label}
           </button>
