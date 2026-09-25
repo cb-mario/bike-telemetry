@@ -7,30 +7,11 @@ import { Card } from '../components/ui/Card'
 import { Icon } from '../components/ui/Icon'
 import { RoutePreview } from '../components/RoutePreview'
 import { ElevationProfile } from '../components/ElevationProfile'
-import { DEMO_POINTS, DEMO_RIDE, DEMO_SEGMENTS } from '../lib/demoRide'
+import { DEMO_MAX_HR, DEMO_POINTS, DEMO_RIDE, DEMO_SEGMENTS, DEMO_WEEKS, DEMO_ZONE_FROM } from '../lib/demoRide'
+import { Chip } from '../components/RideCard'
 import { formatDuration, formatNumber } from '../lib/format'
 import { useCountUp } from '../lib/useCountUp'
 import { ZONE_BG } from '../lib/zones'
-
-// Cada función lleva un dato concreto de la app, en sus propias unidades
-const FEATURES = [
-  {
-    icon: 'upload', title: 'Importa sin teclear', fact: 'Strava · .gpx',
-    text: 'Conecta Strava o suelta un archivo GPX. Distancia, desnivel, tiempo en movimiento y pulso se calculan solos.',
-  },
-  {
-    icon: 'heartPulse', title: 'Tu pulso, por zonas', fact: 'Z1 – Z5',
-    text: 'Cinco zonas a partir de tu FC máxima, la que tú indiques o la estimada por tu edad. Cada salida cae en la suya.',
-  },
-  {
-    icon: 'chart', title: 'Tu evolución, semana a semana', fact: '4 semanas · 12 semanas · 12 meses',
-    text: 'Distancia, desnivel y tiempo por semana o por mes, en gráfico o en tabla, para ver si de verdad vas a más.',
-  },
-  {
-    icon: 'map', title: 'Rutas para el ciclocomputador', fact: 'Carretera · gravel · trekking',
-    text: 'Traza la próxima salida en el mapa ajustada a las vías, mira su perfil de altitud y exporta el GPX.',
-  },
-]
 
 const STEPS = [
   { title: 'Crea tu cuenta', text: 'Email y contraseña. Si añades tu edad y tu FC en reposo, las zonas de pulso se ajustan a ti.' },
@@ -155,7 +136,7 @@ function DemoRide() {
             <dt className="flex items-center gap-2 text-[11px] font-medium tracking-wider text-zinc-400 uppercase">
               <span aria-hidden className={`h-3 w-0.5 rounded-full ${m.mark}`} />{m.label}
             </dt>
-            <dd className="mt-1.5 text-xl font-semibold tracking-tight text-zinc-100 tabular-nums sm:text-2xl">
+            <dd className="mt-1.5 font-display text-xl font-semibold tracking-tight text-zinc-100 tabular-nums sm:text-2xl">
               {m.value}{m.unit && <span className="ml-1 text-sm font-normal tracking-normal text-zinc-400">{m.unit}</span>}
             </dd>
           </div>
@@ -194,6 +175,7 @@ function DemoRide() {
   )
 }
 
+// Funciones: tres bloques alternos, cada uno con una pieza real de la interfaz sobre datos de ejemplo
 function Features() {
   return (
     <section id="funciones" aria-labelledby="funciones-titulo" className="scroll-mt-20 border-t border-zinc-800/70">
@@ -206,24 +188,166 @@ function Features() {
             Los datos que ya grabas, convertidos en respuestas: cuánto has rodado, a qué intensidad y hacia dónde vas.
           </p>
         </div>
-        <ul className="stagger mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {FEATURES.map((f, i) => (
-            <li key={f.title} style={{ '--i': i }}>
-              <Card as="div" className="flex h-full flex-col gap-4 p-5">
-                <span className="flex size-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-950/60 text-zinc-300">
-                  <Icon name={f.icon} className="size-[18px]" />
-                </span>
-                <div className="flex-1">
-                  <h3 className="text-base font-medium text-zinc-100">{f.title}</h3>
-                  <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">{f.text}</p>
-                </div>
-                <p className="border-t border-zinc-800 pt-3 text-xs font-medium text-zinc-300 tabular-nums">{f.fact}</p>
-              </Card>
-            </li>
-          ))}
-        </ul>
+        <div className="mt-14 flex flex-col gap-16 lg:mt-20 lg:gap-24">
+          <FeatureBlock title="Tu evolución, semana a semana"
+            text="Distancia, desnivel y tiempo por semana o por mes, en gráfico o en tabla, para ver si de verdad vas a más."
+            facts={['4 semanas', '12 semanas', '12 meses']}>
+            <WeeksDemo />
+          </FeatureBlock>
+          <FeatureBlock reverse title="Tu pulso, por zonas"
+            text="Cinco zonas a partir de tu FC máxima, la que tú indiques o la estimada por tu edad. Cada salida cae en la suya."
+            facts={['Z1 – Z5', 'FC máx. propia o estimada']}>
+            <ZonesDemo />
+          </FeatureBlock>
+          <FeatureBlock title="Rutas para el ciclocomputador"
+            text="Traza la próxima salida en el mapa ajustada a las vías, mira su perfil de altitud y exporta el GPX a Garmin, Wahoo, Hammerhead o Bryton."
+            facts={['Carretera', 'Gravel', 'Paseo', 'Exporta .gpx']}>
+            <RouteDemo />
+          </FeatureBlock>
+        </div>
       </div>
     </section>
+  )
+}
+
+function FeatureBlock({ title, text, facts, reverse = false, children }) {
+  return (
+    <div className="grid items-center gap-8 lg:grid-cols-12 lg:gap-12">
+      <div className={`min-w-0 lg:col-span-5 ${reverse ? 'lg:order-2 lg:col-start-8' : ''}`}>
+        <h3 className="font-display text-2xl font-semibold tracking-tight text-zinc-50 sm:text-3xl">{title}</h3>
+        <p className="mt-3 max-w-md text-base leading-relaxed text-pretty text-zinc-400">{text}</p>
+        <ul className="mt-5 flex flex-wrap gap-1.5">
+          {facts.map((f) => <li key={f}><Chip>{f}</Chip></li>)}
+        </ul>
+      </div>
+      <div className={`min-w-0 lg:col-span-7 ${reverse ? 'lg:order-1 lg:col-start-1' : ''}`}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+// Cabecera común de las vistas de ejemplo
+function DemoCardHeader({ title, meta }) {
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-zinc-800 px-4 py-3 sm:px-5">
+      <div className="min-w-0">
+        <p className="truncate text-sm font-medium text-zinc-100">{title}</p>
+        {meta && <p className="text-xs text-zinc-500">{meta}</p>}
+      </div>
+      <span className="shrink-0 rounded-full border border-zinc-700 px-2 py-0.5 text-[11px] font-medium text-zinc-400">Datos de ejemplo</span>
+    </div>
+  )
+}
+
+// Doce semanas de barras; la semana en curso resaltada, como en el Resumen
+function WeeksDemo() {
+  const max = Math.max(...DEMO_WEEKS)
+  const total = DEMO_WEEKS.reduce((s, km) => s + km, 0)
+  return (
+    <Card as="figure" className="overflow-hidden" aria-label="Gráfico de ejemplo: kilómetros por semana">
+      <DemoCardHeader title="Distancia por semana" meta="Últimas 12 semanas" />
+      <div className="grid grid-cols-3 gap-px border-b border-zinc-800 bg-zinc-800">
+        {[
+          ['Distancia', formatNumber(total), 'km', 'bg-dist'],
+          ['Media semanal', formatNumber(total / DEMO_WEEKS.length), 'km', 'bg-dist'],
+          ['Esta semana', formatNumber(DEMO_WEEKS.at(-1)), 'km', 'bg-zinc-500'],
+        ].map(([label, value, unit, mark]) => (
+          <div key={label} className="bg-zinc-900 px-4 py-3 sm:px-5">
+            <p className="flex items-center gap-2 text-[11px] font-medium tracking-wider text-zinc-400 uppercase">
+              <span aria-hidden className={`h-3 w-0.5 rounded-full ${mark}`} />{label}
+            </p>
+            <p className="mt-1.5 font-display text-xl font-semibold tracking-tight text-zinc-100 tabular-nums sm:text-2xl">
+              {value}<span className="ml-1 text-sm font-normal tracking-normal text-zinc-400">{unit}</span>
+            </p>
+          </div>
+        ))}
+      </div>
+      <div className="px-4 pt-6 pb-4 sm:px-5">
+        <svg viewBox="0 0 480 170" className="h-auto w-full" aria-hidden>
+          {[0, 1, 2].map((i) => (
+            <line key={i} x1="0" x2="480" y1={20 + i * 60} y2={20 + i * 60} className="stroke-zinc-800" strokeWidth="1" />
+          ))}
+          {DEMO_WEEKS.map((km, i) => {
+            const h = (km / max) * 140
+            const current = i === DEMO_WEEKS.length - 1
+            return (
+              <rect key={i} x={i * 40 + 8} y={140 - h + 20} width="24" height={h} rx="3"
+                className={`grow-y ${current ? 'fill-dist' : 'fill-dist/45'}`} style={{ animationDelay: `${i * 30}ms` }} />
+            )
+          })}
+        </svg>
+        <div className="mt-2 flex justify-between text-[11px] text-zinc-500">
+          <span>Hace 12 semanas</span>
+          <span className="text-zinc-300">Esta semana</span>
+        </div>
+      </div>
+    </Card>
+  )
+}
+
+// Las cinco zonas con su rango en bpm y el reparto de la salida de ejemplo
+function ZonesDemo() {
+  const zones = DEMO_ZONE_FROM.map((from, i) => ({
+    zone: i + 1, name: ZONE_NAMES[i], from, to: (DEMO_ZONE_FROM[i + 1] ?? DEMO_MAX_HR + 1) - 1, share: DEMO_RIDE.zoneShare[i],
+  })).reverse()
+  return (
+    <Card as="figure" className="overflow-hidden" aria-label="Zonas de pulso de ejemplo">
+      <DemoCardHeader title="Zonas de pulso" meta={`FC máx. ${DEMO_MAX_HR} bpm · ${DEMO_RIDE.title}`} />
+      <ul className="flex flex-col gap-4 px-4 py-5 sm:px-5">
+        {zones.map((z) => (
+          <li key={z.zone}>
+            <div className="flex items-baseline justify-between gap-3 text-sm">
+              <span className="flex items-center gap-2 text-zinc-200">
+                <span aria-hidden className={`size-2 rounded-full ${ZONE_BG[z.zone - 1]}`} />
+                <span className="font-medium">Z{z.zone}</span>
+                <span className="text-zinc-400">{z.name}</span>
+              </span>
+              <span className="text-zinc-300 tabular-nums">{Math.round(z.share * 100)} %</span>
+            </div>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-zinc-800">
+              <div className={`h-full origin-left rounded-full animate-grow-x ${ZONE_BG[z.zone - 1]}`} style={{ width: `${z.share * 100}%` }} />
+            </div>
+            <p className="mt-1.5 text-xs text-zinc-500 tabular-nums">{z.from}–{z.to} bpm</p>
+          </li>
+        ))}
+      </ul>
+    </Card>
+  )
+}
+
+// El trazado de la salida de ejemplo como ruta planificada, con sus lecturas y el tipo de vía
+function RouteDemo() {
+  const eta = Math.round((DEMO_RIDE.distanceKm / 25) * 60)
+  return (
+    <Card as="figure" className="overflow-hidden" aria-label="Ruta planificada de ejemplo">
+      <DemoCardHeader title="Nueva ruta" meta="Ajustada a carretera" />
+      <div className="grid gap-px bg-zinc-800 sm:grid-cols-[1fr_12rem]">
+        <div className="flex items-center justify-center bg-zinc-950/60 py-4">
+          <RoutePreview segments={DEMO_SEGMENTS} width={380} height={210} padding={20} markers strokeWidth={3}
+            className="h-auto w-full max-w-[380px]" />
+        </div>
+        <dl className="grid grid-cols-3 gap-px bg-zinc-800 sm:grid-cols-1">
+          {[
+            ['Distancia', formatNumber(DEMO_RIDE.distanceKm, 1), 'km', 'bg-dist'],
+            ['Desnivel', formatNumber(DEMO_RIDE.elevationGain), 'm', 'bg-elev'],
+            ['Tiempo est.', formatDuration(eta), null, 'bg-zinc-500'],
+          ].map(([label, value, unit, mark]) => (
+            <div key={label} className="bg-zinc-900 px-4 py-3 sm:px-5 sm:py-4">
+              <dt className="flex items-center gap-2 text-[11px] font-medium tracking-wider text-zinc-400 uppercase">
+                <span aria-hidden className={`h-3 w-0.5 rounded-full ${mark}`} />{label}
+              </dt>
+              <dd className="mt-1.5 font-display text-lg font-semibold tracking-tight text-zinc-100 tabular-nums sm:text-xl">
+                {value}{unit && <span className="ml-1 text-sm font-normal tracking-normal text-zinc-400">{unit}</span>}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+      <div className="border-t border-zinc-800 px-3 pt-3 pb-1 sm:px-4">
+        <ElevationProfile points={DEMO_POINTS} height={120} />
+      </div>
+    </Card>
   )
 }
 

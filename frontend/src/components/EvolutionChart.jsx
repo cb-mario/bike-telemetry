@@ -110,6 +110,8 @@ function Columns({ buckets, period, metric }) {
 
   // Etiquetas del eje X espaciadas para que no choquen (~48px cada una)
   const labelEvery = Math.max(1, Math.ceil(48 / (band || 1)))
+  // El periodo en curso (la última columna) va a plena intensidad y el resto atenuado, para ver dónde estás;
+  // al pasar el cursor, la columna señalada también se enciende
   // Etiqueta directa solo en el valor máximo
   const maxIndex = values.indexOf(Math.max(...values))
   const activeBucket = active != null ? buckets[active] : null
@@ -141,7 +143,8 @@ function Columns({ buckets, period, metric }) {
               <g key={b.periodStart}>
                 {v > 0 && (
                   <path key={`${metric.value}-${b.periodStart}`} d={columnPath(x, y(v), barW, h)} style={{ animationDelay: `${i * 30}ms` }}
-                    className={`grow-y ${metric.fill} transition-[filter] duration-150 ${active === i ? 'brightness-130' : ''}`} />
+                    className={`grow-y ${metric.fill} transition-[filter,opacity] duration-150 ${active === i ? 'brightness-130' : ''}
+                      ${i === buckets.length - 1 || active === i ? '' : 'opacity-55'}`} />
                 )}
                 {i % labelEvery === 0 && (
                   <text x={xCenter(i)} y={HEIGHT - 8} textAnchor="middle" className="fill-ink-muted text-[11px]">

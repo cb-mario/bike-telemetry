@@ -38,8 +38,8 @@ export function RouteCard({ route: r, avgSpeed, onDownload, onDelete, downloadin
     <Card as="li" style={{ '--i': index % 12 }}
       className="group flex flex-col overflow-hidden transition-colors duration-150 hover:border-zinc-600">
       <Link to={`/rutas/${r.id}`} className="flex flex-1 flex-col outline-none focus-visible:ring-2 focus-visible:ring-brand-2/60">
-        <div className="relative h-32 border-b border-zinc-800 bg-zinc-950/50">
-          <RoutePreview segments={r.preview} width={320} height={128} padding={14} markers
+        <div className="relative h-44 border-b border-zinc-800 bg-zinc-950/50">
+          <RoutePreview segments={r.preview} width={320} height={176} padding={18} markers strokeWidth={2.5}
             className="size-full" />
           <div className="absolute top-3 left-3 flex gap-1.5">
             <Chip>{ROUTING_OPTIONS.find((o) => o.value === r.routing)?.label ?? 'Ruta'}</Chip>
@@ -50,7 +50,7 @@ export function RouteCard({ route: r, avgSpeed, onDownload, onDelete, downloadin
             <h3 className="truncate text-base font-medium text-zinc-100 group-hover:text-white" title={r.name}>{r.name}</h3>
             <p className="mt-0.5 text-sm text-zinc-400">Actualizada el {formatDate(r.updatedAt)}</p>
           </div>
-          <p className="text-3xl font-semibold tracking-tight text-zinc-100 tabular-nums">
+          <p className="font-display text-3xl font-semibold tracking-tight text-zinc-100 tabular-nums">
             {formatNumber(r.distanceKm, 1)}{' '}
             <span className="ml-0.5 text-base font-normal tracking-normal text-zinc-400">km</span>
           </p>

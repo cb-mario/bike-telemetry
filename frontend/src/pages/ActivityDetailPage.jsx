@@ -10,6 +10,7 @@ import { SOURCE_LABEL, sportLabel } from '../lib/sportTypes'
 import { withDistance } from '../lib/track'
 import { Button } from '../components/ui/Button'
 import { Card, CardHeader } from '../components/ui/Card'
+import { Reading } from '../components/OverviewCards'
 import { FormError } from '../components/ui/Field'
 import { Chip } from '../components/RideCard'
 import { BaseMap } from '../components/map/BaseMap'
@@ -23,21 +24,16 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 
-// Una lectura del panel de métricas; la marca de color identifica el tipo de dato
-function Metric({ label, value, unit, accent = 'bg-zinc-600', info }) {
-  return (
-    <div className="min-w-0 bg-zinc-900 p-4 sm:p-5">
-      <p className="flex items-center gap-2 text-xs font-medium tracking-wider text-zinc-400 uppercase">
-        <span aria-hidden className={`h-3 w-0.5 shrink-0 rounded-full ${accent}`} />
-        <span className="truncate">{label}</span>
-        {info && <InfoTip label={label}>{info}</InfoTip>}
-      </p>
-      <p className="mt-3 text-2xl font-semibold tracking-tight text-zinc-100 tabular-nums sm:text-3xl">
-        {value}
-        {unit && value !== '—' && <> <span className="ml-0.5 text-base font-normal tracking-normal text-zinc-400">{unit}</span></>}
-      </p>
-    </div>
-  )
+// Rejilla de lecturas sin celdas vacías: columnas según cuántos datos hay (desde sm)
+// y la última lectura se estira para ocupar el hueco de su fila
+const COLS_SM = { 2: 'sm:grid-cols-2', 3: 'sm:grid-cols-3', 4: 'sm:grid-cols-4' }
+const SPAN_SM = { 1: 'sm:col-span-1', 2: 'sm:col-span-2', 3: 'sm:col-span-3' }
+function readingsLayout(count) {
+  const cols = count <= 4 ? count : count <= 6 ? 3 : 4
+  const left = count % cols
+  const mobileSpan = count % 2 ? 'col-span-2' : ''
+  const smSpan = left ? SPAN_SM[cols - left + 1] : SPAN_SM[1]
+  return { grid: COLS_SM[cols] ?? 'sm:grid-cols-4', last: `${mobileSpan} ${smSpan}` }
 }
 
 export function ActivityDetailPage() {
@@ -118,6 +114,26 @@ export function ActivityDetailPage() {
 
   const a = activity
   const avgSpeed = a.distanceKm / (a.durationMin / 60)
+  const calories = estimateCalories(a, user)
+  const readings = [
+    { accent: 'dist', label: 'Distancia', value: formatNumber(a.distanceKm, 1), unit: 'km' },
+    { label: 'Tiempo en movimiento', value: formatDuration(a.durationMin) },
+    { accent: 'dist', label: 'Velocidad media', value: formatNumber(avgSpeed, 1), unit: 'km/h' },
+    a.elevationGain != null && { accent: 'elev', label: 'Desnivel positivo', value: formatNumber(a.elevationGain), unit: 'm' },
+    a.avgHr != null && { accent: 'hr', label: 'FC media', value: a.avgHr, unit: 'bpm' },
+    a.maxHr != null && { accent: 'hr', label: 'FC máx.', value: a.maxHr, unit: 'bpm' },
+    a.maxSpeedKmh != null && { accent: 'dist', label: 'Velocidad máx.', value: formatNumber(a.maxSpeedKmh, 1), unit: 'km/h' },
+    calories != null && {
+      accent: 'hr', unit: 'kcal', value: formatNumber(calories),
+      label: (
+        <>
+          Calorías (estim.)
+          <InfoTip label="Calorías">Estimación de Keytel a partir de FC media, duración, peso, edad y sexo de tu perfil.</InfoTip>
+        </>
+      ),
+    },
+  ].filter(Boolean)
+  const layout = readingsLayout(readings.length)
   const start = segments?.[0]?.[0]
   const end = segments?.at(-1)?.at(-1)
 
@@ -127,12 +143,12 @@ export function ActivityDetailPage() {
 
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
-          <div className="flex flex-wrap gap-1.5">
+          <h1 className="text-3xl font-semibold tracking-tight text-zinc-100 sm:text-4xl">{a.title}</h1>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-zinc-400">
+            <span className="mr-1">{formatDate(a.date)}</span>
             <Chip>{sportLabel(a.sportType)}</Chip>
             <Chip dot={a.source === 'strava' ? 'bg-strava' : undefined}>{SOURCE_LABEL[a.source] ?? 'Manual'}</Chip>
           </div>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-100">{a.title}</h1>
-          <p className="mt-1.5 text-sm text-zinc-400">{formatDate(a.date)}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <AlertDialog>
@@ -158,11 +174,20 @@ export function ActivityDetailPage() {
         </div>
       </div>
 
+      {/* Lecturas: solo las que existen; un dato que falta se omite, no se rellena con guiones */}
+      <Card as="div" className="overflow-hidden">
+        <div className={`grid grid-cols-2 gap-px bg-zinc-800 ${layout.grid}`}>
+          {readings.map((r, i) => (
+            <Reading key={i} {...r} className={i === readings.length - 1 ? layout.last : ''} />
+          ))}
+        </div>
+      </Card>
+
       {segments ? (
         <Card className="overflow-hidden">
           <BaseMap bounds={bounds} padding={40} className="h-[22rem] sm:h-[28rem]">
             <Polyline positions={segments} pathOptions={{ color: THEME.casing, weight: 7, opacity: 0.6 }} interactive={false} />
-            <Polyline positions={segments} pathOptions={{ color: THEME.route, weight: 3.5, opacity: 0.95 }} interactive={false} />
+            <Polyline positions={segments} pathOptions={{ color: THEME.route, weight: 4, opacity: 0.95 }} interactive={false} />
             {start && <CircleMarker center={start} radius={6} pathOptions={{ color: THEME.card, weight: 2, fillColor: THEME.ink, fillOpacity: 1 }} />}
             {end && <CircleMarker center={end} radius={6} pathOptions={{ color: THEME.card, weight: 2, fillColor: THEME.route, fillOpacity: 1 }} />}
             {hover.point && (
@@ -189,21 +214,6 @@ export function ActivityDetailPage() {
           </div>
         </Card>
       )}
-
-      <Card as="div" className="overflow-hidden">
-        <div className="grid grid-cols-2 gap-px bg-zinc-800 lg:grid-cols-4">
-        <Metric label="Distancia" value={formatNumber(a.distanceKm, 1)} unit="km" accent="bg-dist" />
-        <Metric label="Tiempo en movimiento" value={formatDuration(a.durationMin)} />
-        <Metric label="Velocidad media" value={formatNumber(avgSpeed, 1)} unit="km/h" accent="bg-dist" />
-        <Metric label="Velocidad máx." value={a.maxSpeedKmh != null ? formatNumber(a.maxSpeedKmh, 1) : '—'} unit="km/h" accent="bg-dist" />
-        <Metric label="FC media" value={a.avgHr ?? '—'} unit="bpm" accent="bg-hr" />
-        <Metric label="FC máx." value={a.maxHr ?? '—'} unit="bpm" accent="bg-hr" />
-        <Metric label="Desnivel positivo" value={a.elevationGain != null ? formatNumber(a.elevationGain) : '—'} unit="m" accent="bg-elev" />
-        <Metric label="Calorías (estim.)" unit="kcal" accent="bg-hr"
-          info="Estimación de Keytel a partir de FC media, duración, peso, edad y sexo de tu perfil. Sin esos datos no se calcula."
-          value={estimateCalories(a, user) != null ? formatNumber(estimateCalories(a, user)) : '—'} />
-        </div>
-      </Card>
 
       {a.notes && (
         <Card className="p-5">

@@ -92,7 +92,7 @@ export function GpxDropzone({ initialFile, onInitialFileUsed, onImported }) {
         ) : (
           <>
             <div className={`flex size-12 items-center justify-center rounded-full transition-all duration-200
-              ${dragging ? 'bg-brand text-white' : 'bg-zinc-800/80 text-zinc-300 group-hover:text-zinc-100'}`}>
+              ${dragging ? 'bg-brand text-brand-ink' : 'bg-zinc-800/80 text-zinc-300 group-hover:text-zinc-100'}`}>
               <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.75"
                 strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                 <path d="M12 16V4m0 0-4 4m4-4 4 4M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />

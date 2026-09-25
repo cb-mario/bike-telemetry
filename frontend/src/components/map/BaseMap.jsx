@@ -24,7 +24,8 @@ export function BaseMap({ bounds, padding = 32, className = '', children }) {
   return (
     <MapContainer center={[40.4168, -3.7038]} zoom={6} className={className} zoomControl={false}
       preferCanvas scrollWheelZoom attributionControl>
-      <TileLayer url={TILES} attribution={ATTRIBUTION} maxZoom={20} />
+      {/* map-tiles: tinte azul marino de las teselas (index.css) para que el mapa sea parte de la interfaz */}
+      <TileLayer url={TILES} attribution={ATTRIBUTION} maxZoom={20} className="map-tiles" />
       <ZoomControl position="bottomright" />
       <FitBounds bounds={bounds} padding={padding} />
       {children}

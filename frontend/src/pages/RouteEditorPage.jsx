@@ -35,7 +35,7 @@ function Stat({ label, value, unit, accent }) {
         {accent && <span aria-hidden className={`size-1.5 rounded-full ${accent}`} />}
         {label}
       </Label>
-      <dd className="mt-1 text-xl font-semibold tracking-tight whitespace-nowrap text-zinc-100">
+      <dd className="mt-1 font-display text-xl font-semibold tracking-tight whitespace-nowrap text-zinc-100">
         {value}{unit && <span className="ml-1 text-sm font-normal text-zinc-400">{unit}</span>}
       </dd>
     </div>
@@ -269,6 +269,7 @@ export function RouteEditorPage() {
 
             <div className="grid grid-cols-2 gap-2">
               <Button onClick={save} loading={saving} disabled={!canSave || (!dirty && editingId)}>
+                {editingId && !dirty && <Icon name="check" className="size-4" />}
                 {editingId ? (dirty ? 'Guardar cambios' : 'Guardada') : 'Guardar ruta'}
               </Button>
               <Button variant="secondary" onClick={downloadCurrent} disabled={!canSave} loading={busyId === editingId && busyId != null}>

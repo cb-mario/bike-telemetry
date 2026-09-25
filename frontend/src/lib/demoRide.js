@@ -94,3 +94,10 @@ export const DEMO_RIDE = {
   elevationGain: elevationGain(coords),
   zoneShare,
 }
+
+// Doce semanas de ejemplo para el gráfico de evolución de la landing (km por semana, la última es la actual)
+export const DEMO_WEEKS = [96, 128, 84, 142, 155, 118, 0, 164, 181, 147, 196, 132]
+
+// Límites de las zonas de ejemplo (FC máx. 190 bpm), para enseñar los rangos en bpm
+export const DEMO_MAX_HR = 190
+export const DEMO_ZONE_FROM = ZONE_FROM
