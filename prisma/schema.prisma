@@ -13,8 +13,10 @@ datasource db {
 
 model User {
   id           Int       @id @default(autoincrement())
-  email        String    @unique
-  passwordHash String
+  // Opcionales: una cuenta creada con "Continuar con Strava" no tiene email ni contraseña
+  // (la API de Strava no facilita el email); se identifica por stravaAthleteId
+  email        String?   @unique
+  passwordHash String?
   maxHr        Int? // FC máxima del usuario (bpm), base para las zonas de pulso
   // Perfil (registro por pasos); base de las estimaciones
   name         String?
@@ -24,6 +26,9 @@ model User {
   weightKg     Float?
   restingHr    Int?
   createdAt    DateTime  @default(now())
+
+  // "Continuar con Google": identificador estable de la cuenta de Google (claim sub del ID token)
+  googleId     String?   @unique
 
   // Conexión con Strava (tokens cifrados con AES-256-GCM, ver src/utils/crypto.js)
   stravaAthleteId      String?        @unique

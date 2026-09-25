@@ -11,6 +11,8 @@ import { Field, FormError, Input } from '../components/ui/Field'
 import { SegmentedControl } from '../components/ui/SegmentedControl'
 import { Label } from '../components/ui/Text'
 import { StravaControls } from '../components/StravaControls'
+import { GoogleAccess } from '../components/GoogleAccess'
+import { InfoTip } from '../components/InfoTip'
 
 // Zonas por % de la FC máxima (mismo modelo que la tarjeta de zonas)
 const ZONES = [
@@ -44,12 +46,13 @@ function diff(form, user) {
   return changes
 }
 
-function EstimateTile({ label, value, unit, hint, accent }) {
+function EstimateTile({ label, value, unit, hint, accent, info }) {
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4">
-      <Label className="flex items-center gap-1.5">
-        {accent && <span aria-hidden className={`size-1.5 rounded-full ${accent}`} />}
+    <div className="bg-zinc-900 p-4">
+      <Label className="flex items-center gap-2">
+        <span aria-hidden className={`h-3 w-0.5 rounded-full ${accent ?? 'bg-zinc-600'}`} />
         {label}
+        {info && <InfoTip label={label}>{info}</InfoTip>}
       </Label>
       <p className="mt-2 text-2xl font-semibold tracking-tight text-zinc-50">
         {value ?? '—'}{value != null && unit && <span className="ml-1 text-sm font-normal text-zinc-400">{unit}</span>}
@@ -94,17 +97,16 @@ export function ProfilePage() {
     <main className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-10 sm:px-6">
       {/* Cabecera del perfil */}
       <Card className="relative overflow-hidden p-6 sm:p-8">
-        <div aria-hidden className="absolute -top-24 -right-24 size-72 rounded-full bg-brand/20 blur-3xl" />
         <div className="relative flex flex-wrap items-center gap-5">
           <Avatar user={user} size="size-20 text-2xl" />
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-3xl font-semibold tracking-tight text-zinc-50">{displayName(user)}</h1>
-            <p className="mt-1 text-sm text-zinc-400">{user.email} · desde {formatDate(user.createdAt)}</p>
+            <p className="mt-1 text-sm text-zinc-400">{user.email ?? 'Entras con Strava'} · desde {formatDate(user.createdAt)}</p>
           </div>
           <Button variant="secondary" onClick={logout}>Cerrar sesión</Button>
         </div>
         {!user.name && (
-          <p className="relative mt-5 rounded-xl border border-brand/30 bg-brand/10 px-4 py-3 text-sm text-zinc-200">
+          <p className="relative mt-5 rounded-lg border border-zinc-700 bg-zinc-950/40 px-4 py-3 text-sm text-zinc-300">
             Añade tu nombre para que aparezca en lugar del email.
           </p>
         )}
@@ -121,7 +123,7 @@ export function ProfilePage() {
                 {(id) => <Input id={id} type="date" max={todayInput()} {...bind('birthDate')} />}
               </Field>
               <div className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium tracking-wider text-zinc-400 uppercase">Sexo</span>
+                <span className="text-[13px] font-medium text-zinc-300">Sexo</span>
                 <SegmentedControl label="Sexo" options={[...SEX_OPTIONS, { value: '', label: 'Sin indicar' }]}
                   value={form.sex} onChange={(sex) => setForm((f) => ({ ...f, sex }))} />
               </div>
@@ -144,12 +146,15 @@ export function ProfilePage() {
         <div className="flex flex-col gap-6">
           <Card className="p-5">
             <h2 className="text-sm font-medium text-zinc-100">Estimaciones</h2>
-            <div className="stagger mt-4 grid grid-cols-2 gap-3">
+            <div className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-zinc-800 bg-zinc-800">
               <EstimateTile label="Edad" value={e.age} unit="años" />
-              <EstimateTile label="IMC" value={e.bmi != null ? formatNumber(e.bmi, 1) : null} hint={bmiCategory(e.bmi)} />
+              <EstimateTile label="IMC" value={e.bmi != null ? formatNumber(e.bmi, 1) : null} hint={bmiCategory(e.bmi)}
+                info="Índice de masa corporal: peso (kg) dividido entre la altura (m) al cuadrado." />
               <EstimateTile label="FC máx." value={effectiveMax} unit="bpm" accent="bg-hr"
+                info="Si no la indicas tú, se estima con la fórmula de Tanaka: 208 − 0,7 × edad. Es la base de tus zonas de pulso."
                 hint={user.maxHr ? 'de tu perfil' : e.maxHr ? 'estimada por edad' : 'añade tu edad'} />
               <EstimateTile label="Reserva FC" value={e.hrReserve} unit="bpm" accent="bg-hr"
+                info="FC máxima menos FC en reposo: el margen de pulso del que dispones al entrenar."
                 hint={e.hrReserve ? 'máx. − reposo' : 'añade FC en reposo'} />
             </div>
           </Card>
@@ -179,6 +184,12 @@ export function ProfilePage() {
             <h2 className="text-sm font-medium text-zinc-100">Strava</h2>
             <p className="mt-1 mb-4 text-xs text-zinc-500">Sincroniza tus salidas automáticamente.</p>
             <div className="flex justify-start [&>div]:items-start"><StravaControls /></div>
+          </Card>
+
+          <Card className="p-5">
+            <h2 className="text-sm font-medium text-zinc-100">Google</h2>
+            <p className="mt-1 mb-4 text-xs text-zinc-500">Entra con tu cuenta de Google sin contraseña.</p>
+            <GoogleAccess />
           </Card>
         </div>
       </div>

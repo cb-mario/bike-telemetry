@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
+import { SocialLogin } from '../components/auth/SocialLogin'
 import { useAuth } from '../context/AuthContext'
 import { Button } from '../components/ui/Button'
 import { Field, FormError, Input } from '../components/ui/Field'
@@ -65,6 +66,9 @@ export function AuthPage({ initialMode = 'login' }) {
         <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-[inset_0_1px_0_0_rgb(255_255_255/0.04),0_24px_48px_-24px_rgb(0_0_0/0.6)] animate-rise-in sm:p-8">
           <div className="mb-6">
             <SegmentedControl label="Modo" options={MODES} value={mode} onChange={setMode} />
+          </div>
+          <div className="mb-6">
+            <SocialLogin />
           </div>
           {mode === 'login' ? <LoginForm /> : <RegisterSteps />}
         </div>

@@ -1,0 +1,160 @@
+const jwt = require('jsonwebtoken');
+
+const User = require('../models/user.model');
+const { HttpError } = require('../middlewares/errorHandler');
+const { loginRedirect } = require('../utils/loginTicket');
+
+// "Continuar con Google" (OAuth 2.0 / OpenID Connect, flujo de código en el servidor)
+const GOOGLE_AUTH = 'https://accounts.google.com/o/oauth2/v2/auth';
+const GOOGLE_TOKEN = 'https://oauth2.googleapis.com/token';
+const GOOGLE_ISSUERS = ['https://accounts.google.com', 'accounts.google.com'];
+const SCOPES = 'openid email profile';
+const LOGIN_PURPOSE = 'google-login';
+const LINK_PURPOSE = 'google-link';
+
+function config() {
+  return {
+    clientId: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    redirectUri: process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000/api/auth/google/callback',
+    frontendUrl: (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, ''),
+  };
+}
+
+const isConfigured = () => Boolean(config().clientId && config().clientSecret);
+
+function assertConfigured() {
+  if (!isConfigured()) {
+    throw new HttpError(503, 'El acceso con Google no está configurado (GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET)');
+  }
+}
+
+// --- URLs de autorización --------------------------------------------------------
+
+// "state" es un JWT firmado y de vida corta: evita CSRF y, al vincular, identifica al usuario
+function authorizeUrl(statePayload) {
+  assertConfigured();
+  const { clientId, redirectUri } = config();
+  const state = jwt.sign(statePayload, process.env.JWT_SECRET, { algorithm: 'HS256', expiresIn: '10m' });
+  const params = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    response_type: 'code',
+    scope: SCOPES,
+    prompt: 'select_account',
+    state,
+  });
+  return `${GOOGLE_AUTH}?${params}`;
+}
+
+const buildLoginUrl = () => authorizeUrl({ purpose: LOGIN_PURPOSE });
+const buildLinkUrl = (userId) => authorizeUrl({ purpose: LINK_PURPOSE, sub: String(userId) });
+
+// --- Callback ------------------------------------------------------------------------
+
+function readState(state) {
+  try {
+    return jwt.verify(state, process.env.JWT_SECRET, { algorithms: ['HS256'] });
+  } catch {
+    return null;
+  }
+}
+
+// Canjea el código por tokens y devuelve la identidad del ID token. El ID token llega directamente
+// de Google por TLS en respuesta a nuestra petición autenticada con el client secret, así que basta
+// con comprobar sus claims (OpenID Connect Core, 3.1.3.7)
+async function fetchIdentity(code) {
+  const { clientId, clientSecret, redirectUri } = config();
+  let res;
+  try {
+    res = await fetch(GOOGLE_TOKEN, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code, client_id: clientId, client_secret: clientSecret, redirect_uri: redirectUri, grant_type: 'authorization_code',
+      }),
+    });
+  } catch {
+    return null;
+  }
+  const data = await res.json().catch(() => null);
+  const claims = res.ok && data?.id_token ? jwt.decode(data.id_token) : null;
+  if (!claims?.sub) return null;
+  if (!GOOGLE_ISSUERS.includes(claims.iss) || claims.aud !== clientId) return null;
+  if (!claims.exp || claims.exp * 1000 < Date.now()) return null;
+  return {
+    googleId: String(claims.sub),
+    email: claims.email_verified === true && typeof claims.email === 'string' ? claims.email.trim().toLowerCase() : null,
+    name: typeof claims.name === 'string' ? claims.name.trim().slice(0, 60) || null : null,
+  };
+}
+
+// Procesa la vuelta desde Google y devuelve la URL del frontend a la que redirigir
+async function handleCallback({ code, state, error }) {
+  const { frontendUrl } = config();
+  const payload = state ? readState(state) : null;
+  const linking = payload?.purpose === LINK_PURPOSE;
+  const back = linking
+    ? (status) => `${frontendUrl}/perfil?google=${status}`
+    : (status) => `${frontendUrl}/?google_login=${status}`;
+
+  if (error) return back('denied');
+  if (!code || (payload?.purpose !== LOGIN_PURPOSE && !linking)) return back('error');
+
+  try {
+    assertConfigured();
+    const identity = await fetchIdentity(code);
+    if (!identity) return back('error');
+
+    const owner = await User.findByGoogleId(identity.googleId);
+
+    // Vincular Google a la cuenta con la que ya se ha iniciado sesión
+    if (linking) {
+      const userId = Number(payload.sub);
+      if (owner && owner.id !== userId) return back('taken');
+      await User.setGoogleId(userId, identity.googleId);
+      return back('linked');
+    }
+
+    // Iniciar sesión: cuenta ya vinculada a esta cuenta de Google
+    if (owner) return loginRedirect(frontendUrl, 'google', owner.id, false);
+
+    // Cuenta nueva: hace falta un email verificado por Google
+    if (!identity.email) return back('unverified');
+    // Ya hay una cuenta con ese email: no se vincula sola. Como el registro no verifica el email,
+    // unirlas permitiría a quien registró ese email (sin ser suyo) entrar en la cuenta de Google de otra
+    // persona. Se vincula desde el perfil tras entrar con la contraseña
+    if (await User.findByEmail(identity.email)) return back('exists');
+
+    const { id } = await User.createFromGoogle({ googleId: identity.googleId, email: identity.email, name: identity.name });
+    return loginRedirect(frontendUrl, 'google', id, true);
+  } catch (err) {
+    // Alta simultánea con el mismo email o la misma cuenta de Google
+    if (err.code === 'P2002') return back(linking ? 'taken' : 'exists');
+    return back('error');
+  }
+}
+
+// --- Estado y desvinculación ------------------------------------------------------------
+
+async function status(userId) {
+  const methods = await User.findLoginMethods(userId);
+  if (!methods) throw new HttpError(404, 'Usuario no encontrado');
+  return {
+    configured: isConfigured(),
+    linked: Boolean(methods.googleId),
+    // Sin contraseña ni Strava, Google es la única forma de entrar
+    canUnlink: Boolean(methods.passwordHash || methods.stravaAthleteId),
+  };
+}
+
+async function unlink(userId) {
+  const { linked, canUnlink } = await status(userId);
+  if (!linked) return;
+  if (!canUnlink) {
+    throw new HttpError(409, 'Tu cuenta entra con Google: si lo desvinculas no podrás volver a iniciar sesión');
+  }
+  await User.setGoogleId(userId, null);
+}
+
+module.exports = { buildLoginUrl, buildLinkUrl, handleCallback, status, unlink, isConfigured };

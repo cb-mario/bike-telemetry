@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/user.model');
 const { toPublicUser } = require('./profile.service');
 const { HttpError } = require('../middlewares/errorHandler');
+const { readLoginTicket } = require('../utils/loginTicket');
 
 // Coste de bcrypt configurable (los tests usan uno bajo para ir rápido)
 const SALT_ROUNDS = Number(process.env.BCRYPT_ROUNDS) || 12;
@@ -44,7 +45,8 @@ async function register(email, password, profile = {}) {
 
 async function login(email, password) {
   const user = await User.findByEmail(email);
-  const valid = await bcrypt.compare(password, user ? user.passwordHash : DUMMY_HASH);
+  // Cuentas sin contraseña (creadas con Strava) comparan contra el hash de relleno y fallan
+  const valid = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
 
   if (!user || !valid) {
     throw new HttpError(401, 'Credenciales inválidas');
@@ -53,4 +55,12 @@ async function login(email, password) {
   return { user: toPublicUser(await User.findPublicById(user.id)), token: signToken(user) };
 }
 
-module.exports = { register, login, verifyToken };
+// Canjea el ticket de "Continuar con Strava/Google" por una sesión normal
+async function loginWithTicket(ticket) {
+  const data = readLoginTicket(ticket);
+  const user = data && (await User.findPublicById(data.userId));
+  if (!user) throw new HttpError(401, 'El inicio de sesión ha caducado. Vuelve a intentarlo');
+  return { user: toPublicUser(user), token: signToken(user), created: data.created };
+}
+
+module.exports = { register, login, loginWithTicket, verifyToken };

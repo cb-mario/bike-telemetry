@@ -49,9 +49,13 @@ export function StravaControls() {
   }
 
   async function handleDisconnect() {
-    await disconnectStrava().catch(() => {})
-    setStatus((s) => ({ ...s, connected: false, lastSyncAt: null }))
-    toast('Strava desconectado. Tus salidas importadas se conservan.', 'info')
+    try {
+      await disconnectStrava()
+      setStatus((s) => ({ ...s, connected: false, lastSyncAt: null }))
+      toast('Strava desconectado. Tus salidas importadas se conservan.', 'info')
+    } catch (err) {
+      toast(err.message, 'error')
+    }
   }
 
   const connected = status?.connected
@@ -63,10 +67,15 @@ export function StravaControls() {
       {connected && (
         <p className="text-[11px] text-zinc-500">
           {status.lastSyncAt ? `Sincronizado ${timeAgo(status.lastSyncAt)}` : 'Aún sin sincronizar'}
-          {' · '}
-          <button type="button" onClick={handleDisconnect} className="underline decoration-zinc-700 underline-offset-2 hover:text-zinc-300">
-            Desconectar
-          </button>
+          {/* Una cuenta creada con Strava no puede desconectarlo: es su forma de entrar */}
+          {status.canDisconnect && (
+            <>
+              {' · '}
+              <button type="button" onClick={handleDisconnect} className="underline decoration-zinc-700 underline-offset-2 hover:text-zinc-300">
+                Desconectar
+              </button>
+            </>
+          )}
         </p>
       )}
     </div>

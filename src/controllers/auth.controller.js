@@ -3,6 +3,8 @@ const User = require('../models/user.model');
 const { HttpError } = require('../middlewares/errorHandler');
 const { parseProfile, PROFILE_FIELDS } = require('../utils/profileValidation');
 const { toPublicUser } = require('../services/profile.service');
+const stravaService = require('../services/strava.service');
+const googleService = require('../services/google.service');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 8;
@@ -81,4 +83,44 @@ async function updateMe(req, res) {
   }
 }
 
-module.exports = { register, login, me, updateMe };
+// "Continuar con Strava" (público): URL de autorización de Strava
+async function stravaLoginUrl(req, res) {
+  res.json({ url: stravaService.buildLoginUrl() });
+}
+
+// Canje del ticket que el callback de Strava o de Google deja en el frontend
+async function exchange(req, res) {
+  res.json(await authService.loginWithTicket(req.body?.ticket));
+}
+
+// --- Google ---
+
+// "Continuar con Google" (público)
+async function googleLoginUrl(req, res) {
+  res.json({ url: googleService.buildLoginUrl() });
+}
+
+// Vincular Google a la cuenta con sesión iniciada
+async function googleLinkUrl(req, res) {
+  res.json({ url: googleService.buildLinkUrl(req.user.id) });
+}
+
+// Vuelta desde Google (navegador): siempre redirige al frontend con el resultado
+async function googleCallback(req, res) {
+  const { code, state, error } = req.query;
+  res.redirect(await googleService.handleCallback({ code, state, error }));
+}
+
+async function googleStatus(req, res) {
+  res.json(await googleService.status(req.user.id));
+}
+
+async function googleUnlink(req, res) {
+  await googleService.unlink(req.user.id);
+  res.status(204).end();
+}
+
+module.exports = {
+  register, login, me, updateMe, stravaLoginUrl, exchange,
+  googleLoginUrl, googleLinkUrl, googleCallback, googleStatus, googleUnlink,
+};

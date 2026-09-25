@@ -29,9 +29,17 @@ export function AuthProvider({ children }) {
     setUser(user)
   }, [])
 
+  // Canjea el ticket de "Continuar con Strava/Google". Devuelve el usuario sin activarlo todavía,
+  // para que quien llama pueda elegir antes a qué pantalla entrar
+  const exchangeLoginTicket = useCallback(async (ticket) => {
+    const { user, token, created } = await api('/auth/exchange', { method: 'POST', body: { ticket } })
+    tokenStorage.set(token)
+    return { user, created }
+  }, [])
+
   const value = useMemo(
-    () => ({ user, setUser, loading, authenticate, logout }),
-    [user, loading, authenticate, logout],
+    () => ({ user, setUser, loading, authenticate, exchangeLoginTicket, logout }),
+    [user, loading, authenticate, exchangeLoginTicket, logout],
   )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

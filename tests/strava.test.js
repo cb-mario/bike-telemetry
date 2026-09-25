@@ -253,7 +253,7 @@ describe('Strava', () => {
 
   it('status y desconexión', async () => {
     let res = await auth(request(app).get('/api/strava/status'));
-    assert.deepEqual(res.body, { configured: true, connected: false, athleteId: null, lastSyncAt: null });
+    assert.deepEqual(res.body, { configured: true, connected: false, athleteId: null, lastSyncAt: null, canDisconnect: true });
 
     await connect();
     const calls = mockStrava({ 'POST /oauth/deauthorize': () => [200, {}] });

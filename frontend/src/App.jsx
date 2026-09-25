@@ -9,6 +9,7 @@ import { RidesPage } from './pages/RidesPage'
 import { RoutesLibraryPage } from './pages/RoutesLibraryPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { LandingPage } from './pages/LandingPage'
+import { ProviderLoginPage } from './pages/ProviderLoginPage'
 import { Backdrop } from './components/Backdrop'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
@@ -44,6 +45,7 @@ export default function App() {
           <Routes>
             <Route path="inicio" element={<LandingPage />} />
             <Route path="registro" element={<AuthPage initialMode="register" />} />
+            <Route path="entrar/:provider" element={<ProviderLoginPage />} />
             <Route path="*" element={<AuthPage />} />
           </Routes>
         </TooltipProvider>
