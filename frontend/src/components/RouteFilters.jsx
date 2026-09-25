@@ -1,21 +1,30 @@
 import { useEffect, useState } from 'react'
+import { cn } from 'cn'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SPORT_TYPES } from '../lib/sportTypes'
 import { DATE_FILTERS, DISTANCE_FILTERS, ELEVATION_FILTERS, EMPTY_FILTERS, hasActiveFilters } from '../lib/routeFilters'
 
-function Select({ label, value, options, onChange }) {
+// Filtro desplegable (shadcn/Base UI). La opción "cualquiera" usa value null, que es como
+// Base UI representa "sin selección"; hacia fuera se sigue usando '' como en EMPTY_FILTERS
+function FilterSelect({ label, value, options, onChange }) {
+  const items = options.map((o) => ({ label: o.label, value: o.value === '' ? null : o.value }))
   const active = value !== ''
   return (
-    <label className="relative">
-      <span className="sr-only">{label}</span>
-      <select value={value} onChange={(e) => onChange(e.target.value)}
-        className={`h-9 appearance-none rounded-lg border bg-zinc-900/70 py-0 pr-8 pl-3 text-xs font-medium backdrop-blur-md
-          transition-all duration-200 hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-series/40 [color-scheme:dark]
-          ${active ? 'border-zinc-600 text-zinc-100' : 'border-zinc-800 text-zinc-400'}`}>
-        {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
-      <svg viewBox="0 0 24 24" className="pointer-events-none absolute top-1/2 right-2.5 size-3.5 -translate-y-1/2 text-zinc-500"
-        fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="m6 9 6 6 6-6" /></svg>
-    </label>
+    <Select items={items} value={active ? value : null} onValueChange={(v) => onChange(v ?? '')}>
+      <SelectTrigger aria-label={label}
+        className={cn('h-9 bg-zinc-900 text-xs font-medium hover:border-zinc-600 data-[size=default]:h-9',
+          active ? 'border-zinc-600 text-zinc-100' : 'border-zinc-800 text-zinc-400')}>
+        <SelectValue />
+      </SelectTrigger>
+      {/* Al menos tan ancho como el botón, pero crece para que ninguna opción se corte */}
+      <SelectContent className="w-auto min-w-(--anchor-width)">
+        <SelectGroup>
+          {items.map((item) => (
+            <SelectItem key={item.value ?? 'any'} value={item.value}>{item.label}</SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
   )
 }
 
@@ -48,13 +57,13 @@ export function RouteFilters({ filters, onChange }) {
           <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
         </svg>
         <input type="search" value={text} onChange={(e) => setText(e.target.value)} placeholder="Buscar ruta…"
-          className="h-9 w-full rounded-lg border border-zinc-800 bg-zinc-900/70 pr-3 pl-9 text-sm text-zinc-100 backdrop-blur-md
-            transition-all duration-200 placeholder:text-zinc-500 hover:border-zinc-600 focus:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-series/40" />
+          className="h-9 w-full rounded-lg border border-zinc-800 bg-zinc-900 pr-3 pl-9 text-sm text-zinc-100
+            transition-colors duration-150 placeholder:text-zinc-500 hover:border-zinc-600 focus:border-brand-2/70 focus:outline-none focus:ring-2 focus:ring-brand-2/20" />
       </label>
-      <Select label="Distancia" value={filters.distance} options={DISTANCE_FILTERS} onChange={set('distance')} />
-      <Select label="Desnivel" value={filters.elevation} options={ELEVATION_FILTERS} onChange={set('elevation')} />
-      <Select label="Fecha" value={filters.date} options={DATE_FILTERS} onChange={set('date')} />
-      <Select label="Tipo" value={filters.sportType}
+      <FilterSelect label="Distancia" value={filters.distance} options={DISTANCE_FILTERS} onChange={set('distance')} />
+      <FilterSelect label="Desnivel" value={filters.elevation} options={ELEVATION_FILTERS} onChange={set('elevation')} />
+      <FilterSelect label="Fecha" value={filters.date} options={DATE_FILTERS} onChange={set('date')} />
+      <FilterSelect label="Tipo" value={filters.sportType}
         options={[{ value: '', label: 'Todos los tipos' }, ...SPORT_TYPES]} onChange={set('sportType')} />
       {hasFilters && (
         <button type="button" onClick={() => onChange(EMPTY_FILTERS)}

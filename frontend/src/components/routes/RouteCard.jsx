@@ -5,6 +5,10 @@ import { RoutePreview } from '../RoutePreview'
 import { Chip } from '../RideCard'
 import { formatDate, formatDuration, formatNumber } from '../../lib/format'
 import { ROUTING_OPTIONS } from '../../lib/planner'
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 
 function Stat({ label, value, accent }) {
   return (
@@ -20,35 +24,33 @@ function Stat({ label, value, accent }) {
 
 // Tarjeta de ruta planificada: el enlace abre el editor; acciones de descarga y borrado aparte
 export function RouteCard({ route: r, avgSpeed, onDownload, onDelete, downloading, index = 0 }) {
-  const [confirming, setConfirming] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const eta = avgSpeed ? Math.round((r.distanceKm / avgSpeed) * 60) : null
 
-  function handleDelete() {
-    if (!confirming) {
-      setConfirming(true)
-      setTimeout(() => setConfirming(false), 3000)
-      return
-    }
-    onDelete(r.id)
+  // Si el borrado va bien la tarjeta desaparece; si falla, el diálogo sigue abierto para reintentar
+  async function confirmDelete() {
+    setDeleting(true)
+    await onDelete(r.id)
+    setDeleting(false)
   }
 
   return (
     <Card as="li" style={{ '--i': index % 12 }}
-      className="group flex flex-col overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-brand/40 hover:shadow-[0_24px_48px_-24px_rgb(59_130_246/0.55)]">
-      <Link to={`/rutas/${r.id}`} className="flex flex-1 flex-col outline-none focus-visible:ring-2 focus-visible:ring-series/60">
-        <div className="relative h-32 border-b border-zinc-800 bg-zinc-950/60 bg-[linear-gradient(rgb(39_39_42/0.35)_1px,transparent_1px),linear-gradient(90deg,rgb(39_39_42/0.35)_1px,transparent_1px)] bg-[size:16px_16px]">
+      className="group flex flex-col overflow-hidden transition-colors duration-150 hover:border-zinc-600">
+      <Link to={`/rutas/${r.id}`} className="flex flex-1 flex-col outline-none focus-visible:ring-2 focus-visible:ring-brand-2/60">
+        <div className="relative h-32 border-b border-zinc-800 bg-zinc-950/50">
           <RoutePreview segments={r.preview} width={320} height={128} padding={14} markers
-            className="size-full transition-transform duration-300 group-hover:scale-[1.03]" />
+            className="size-full" />
           <div className="absolute top-3 left-3 flex gap-1.5">
             <Chip>{ROUTING_OPTIONS.find((o) => o.value === r.routing)?.label ?? 'Ruta'}</Chip>
           </div>
         </div>
         <div className="flex flex-1 flex-col gap-4 p-5">
           <div className="min-w-0">
-            <p className="text-xs font-medium tracking-wider text-zinc-400 uppercase">Actualizada {formatDate(r.updatedAt)}</p>
-            <h3 className="mt-1 truncate text-base font-medium text-zinc-100" title={r.name}>{r.name}</h3>
+            <h3 className="truncate text-base font-medium text-zinc-100 group-hover:text-white" title={r.name}>{r.name}</h3>
+            <p className="mt-0.5 text-sm text-zinc-400">Actualizada el {formatDate(r.updatedAt)}</p>
           </div>
-          <p className="text-3xl font-semibold tracking-tight text-zinc-100">
+          <p className="text-3xl font-semibold tracking-tight text-zinc-100 tabular-nums">
             {formatNumber(r.distanceKm, 1)}{' '}
             <span className="ml-0.5 text-base font-normal tracking-normal text-zinc-400">km</span>
           </p>
@@ -63,11 +65,24 @@ export function RouteCard({ route: r, avgSpeed, onDownload, onDelete, downloadin
           className="rounded-md px-2.5 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-zinc-100 disabled:opacity-50">
           {downloading ? 'Descargando…' : 'Descargar GPX'}
         </button>
-        <button type="button" onClick={handleDelete} aria-label={confirming ? `Confirmar borrado de ${r.name}` : `Borrar ${r.name}`}
-          className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors
-            ${confirming ? 'bg-critical/10 text-critical' : 'text-zinc-500 hover:bg-critical/10 hover:text-critical'}`}>
-          {confirming ? '¿Borrar?' : 'Borrar'}
-        </button>
+        <AlertDialog>
+          <AlertDialogTrigger aria-label={`Borrar ${r.name}`}
+            className="rounded-md px-2.5 py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:bg-critical/10 hover:text-critical">
+            Borrar
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Borrar «{r.name}»?</AlertDialogTitle>
+              <AlertDialogDescription>
+                La ruta desaparece de tu biblioteca. Los GPX que ya hayas descargado no se ven afectados.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction variant="destructive" onClick={confirmDelete} loading={deleting}>Borrar ruta</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </Card>
   )

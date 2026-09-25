@@ -1,4 +1,10 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
+import { cn } from 'cn'
+import { LogOutIcon, UserIcon } from 'lucide-react'
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { useAuth } from '../context/AuthContext'
 import { useApp } from '../context/AppContext'
 import { Dialog } from './ui/Dialog'
@@ -28,7 +34,7 @@ function Icon({ d, className = 'size-4' }) {
 
 // Estructura común: navegación fija (arriba en escritorio, abajo en móvil), modal y avisos
 export function AppShell() {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   const { dialog, openNewActivity, closeNewActivity, refresh, toast } = useApp()
   const navigate = useNavigate()
   const location = useLocation()
@@ -52,23 +58,45 @@ export function AppShell() {
       <header className="sticky top-0 z-[1000] border-b border-zinc-800/80 bg-surface/70 backdrop-blur-xl">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
           <Logo />
-          <nav aria-label="Secciones" className="hidden items-center gap-1 rounded-xl border border-zinc-800 bg-zinc-900/70 p-1 sm:flex">
+          <nav aria-label="Secciones" className="hidden items-center gap-1 rounded-xl border border-zinc-800 bg-zinc-950/50 p-1 sm:flex">
             {SECTIONS.map((s) => (
               <NavLink key={s.to} to={s.to} end={s.end}
-                className={({ isActive }) => `flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-sm font-medium transition-all duration-200
-                  ${isActive ? 'bg-brand/20 text-white shadow-sm ring-1 ring-brand/40' : 'text-zinc-400 hover:text-zinc-100'}`}>
+                className={({ isActive }) => `flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors duration-150
+                  ${isActive ? 'bg-zinc-800 text-zinc-50 shadow-[inset_0_1px_0_0_rgb(255_255_255/0.05)]' : 'text-zinc-400 hover:text-zinc-100'}`}>
                 <Icon d={s.icon} />
                 {s.label}
               </NavLink>
             ))}
           </nav>
-          {/* Usuario: nombre y avatar, enlace al perfil */}
-          <NavLink to="/perfil" aria-label="Tu perfil"
-            className={({ isActive }) => `group flex items-center gap-2.5 rounded-full py-1 pr-1 pl-3 transition-all duration-200
-              ${isActive ? 'bg-brand/15 ring-1 ring-brand/40' : 'hover:bg-zinc-800/60'}`}>
-            <span className="hidden max-w-40 truncate text-sm font-medium text-zinc-200 group-hover:text-white md:inline">{displayName(user)}</span>
-            <Avatar user={user} />
-          </NavLink>
+          {/* Usuario: menú con acceso al perfil y cierre de sesión */}
+          <DropdownMenu>
+            <DropdownMenuTrigger aria-label="Menú de usuario"
+              className={cn('group flex items-center gap-2.5 rounded-full py-1 pr-1 pl-3 transition-colors duration-150 outline-none',
+                'hover:bg-zinc-800/60 focus-visible:ring-2 focus-visible:ring-brand-2/60 data-popup-open:bg-zinc-800',
+                location.pathname === '/perfil' && 'bg-zinc-800')}>
+              <span className="hidden max-w-40 truncate text-sm font-medium text-zinc-200 group-hover:text-white md:inline">{displayName(user)}</span>
+              <Avatar user={user} />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuGroup>
+                <DropdownMenuLabel className="flex flex-col gap-0.5 py-1.5">
+                  <span className="truncate text-sm font-medium text-foreground">{displayName(user)}</span>
+                  <span className="truncate font-normal">{user.email ?? 'Cuenta de Strava'}</span>
+                </DropdownMenuLabel>
+              </DropdownMenuGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuGroup>
+                <DropdownMenuItem onClick={() => navigate('/perfil')}>
+                  <UserIcon />
+                  Perfil y zonas de pulso
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={logout}>
+                  <LogOutIcon />
+                  Cerrar sesión
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 
@@ -78,12 +106,13 @@ export function AppShell() {
       </div>
 
       {/* Barra de pestañas inferior en móvil */}
-      <nav aria-label="Secciones" className="fixed inset-x-0 bottom-0 z-[1000] border-t border-zinc-800 bg-surface/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-md sm:hidden">
+      <nav aria-label="Secciones" className="fixed inset-x-0 bottom-0 z-[1000] border-t border-zinc-800 bg-surface/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-md sm:hidden">
         <div className="grid grid-cols-3">
           {SECTIONS.map((s) => (
             <NavLink key={s.to} to={s.to} end={s.end}
-              className={({ isActive }) => `flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors
-                ${isActive ? 'text-brand-2' : 'text-zinc-500'}`}>
+              className={({ isActive }) => `relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors
+                before:absolute before:top-0 before:h-0.5 before:w-8 before:rounded-full before:bg-brand-2 before:transition-opacity
+                ${isActive ? 'text-zinc-50 before:opacity-100' : 'text-zinc-500 before:opacity-0'}`}>
               <Icon d={s.icon} className="size-5" />
               {s.label}
             </NavLink>
