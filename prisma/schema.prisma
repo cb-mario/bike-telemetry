@@ -91,6 +91,8 @@ model PlannedRoute {
   waypoints     String
   // JSON [[lat, lon, ele|null], ...]: trazado completo resultante
   geometry      String
+  // JSON [[[lat, lon], ...]]: miniatura para los listados (null en rutas anteriores a la columna)
+  preview       String?
   distanceKm    Float
   elevationGain Int?
   createdAt     DateTime @default(now())

@@ -82,7 +82,7 @@ function useLatest(refreshKey) {
 
   useEffect(() => {
     api('/activities', { query: { limit: 1 } }).then((r) => setLast(r.data[0] ?? null)).catch(() => setLast(null))
-    api('/planned-routes').then((r) => setNext(r[0] ?? null)).catch(() => setNext(null))
+    api('/planned-routes', { query: { limit: 1 } }).then((r) => setNext(r[0] ?? null)).catch(() => setNext(null))
   }, [refreshKey])
 
   return { last, next }

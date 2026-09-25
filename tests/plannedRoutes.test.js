@@ -98,6 +98,28 @@ describe('Rutas planificadas', () => {
       assert.ok(res.body.preview[0].length >= 2);
     });
 
+    it('?limit devuelve solo las más recientes', async () => {
+      await auth(request(app).post('/api/planned-routes')).send({ ...ROUTE, name: 'Primera' });
+      await auth(request(app).post('/api/planned-routes')).send({ ...ROUTE, name: 'Segunda' });
+      const res = await auth(request(app).get('/api/planned-routes?limit=1'));
+      assert.equal(res.status, 200);
+      assert.deepEqual(res.body.map((r) => r.name), ['Segunda']);
+      assert.equal((await auth(request(app).get('/api/planned-routes?limit=0'))).status, 400);
+    });
+
+    it('rutas guardadas sin miniatura: se calcula al listar sin cambiar su orden', async () => {
+      const { body: old } = await auth(request(app).post('/api/planned-routes')).send({ ...ROUTE, name: 'Antigua' });
+      await auth(request(app).post('/api/planned-routes')).send({ ...ROUTE, name: 'Nueva' });
+      await prisma.$executeRaw`UPDATE "PlannedRoute" SET "preview" = NULL WHERE "id" = ${old.id}`;
+
+      const list = await auth(request(app).get('/api/planned-routes'));
+      assert.deepEqual(list.body.map((r) => r.name), ['Nueva', 'Antigua']);
+      assert.ok(list.body[1].preview[0].length >= 2);
+      const stored = await prisma.plannedRoute.findUnique({ where: { id: old.id } });
+      assert.ok(stored.preview);
+      assert.equal(stored.updatedAt.getTime(), new Date(old.updatedAt).getTime());
+    });
+
     it('lista sin el trazado completo, actualiza y borra', async () => {
       const { body: created } = await auth(request(app).post('/api/planned-routes')).send(ROUTE);
       let list = await auth(request(app).get('/api/planned-routes'));

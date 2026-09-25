@@ -97,8 +97,13 @@ async function uploadGpx(req, res) {
   res.status(201).json(activity);
 }
 
+// Sin ?limit devuelve todas; el planificador pide solo las más recientes
 async function routes(req, res) {
-  res.json(await activityService.routes(req.user.id, parseDateRange(req.query)));
+  const { limit } = req.query;
+  res.json(await activityService.routes(req.user.id, {
+    ...parseDateRange(req.query),
+    limit: limit !== undefined ? parseNumber(Number(limit), 'limit', { min: 1, max: 500, integer: true }) : undefined,
+  }));
 }
 
 async function getTrack(req, res) {

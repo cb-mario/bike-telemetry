@@ -53,6 +53,10 @@ describe('Filtros, rutas para el mapa y polilíneas', () => {
     assert.deepEqual(res.body[0].segments[0][0], [40, -3]);
     assert.equal(res.body[0].summaryPolyline, undefined);
 
+    // ?limit acota el número de salidas; fuera de rango → 400
+    assert.equal((await auth(request(app).get('/api/activities/routes?limit=1'))).body.length, 1);
+    assert.equal((await auth(request(app).get('/api/activities/routes?limit=0'))).status, 400);
+
     // La polilínea guardada decodifica al mismo recorrido
     const stored = await prisma.activity.findUnique({ where: { id: upload.body.id } });
     const coords = polyline.decode(stored.summaryPolyline);

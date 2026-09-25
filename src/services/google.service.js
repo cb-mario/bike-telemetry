@@ -11,6 +11,7 @@ const GOOGLE_ISSUERS = ['https://accounts.google.com', 'accounts.google.com'];
 const SCOPES = 'openid email profile';
 const LOGIN_PURPOSE = 'google-login';
 const LINK_PURPOSE = 'google-link';
+const TIMEOUT_MS = 15000;
 
 function config() {
   return {
@@ -73,6 +74,7 @@ async function fetchIdentity(code) {
       body: new URLSearchParams({
         code, client_id: clientId, client_secret: clientSecret, redirect_uri: redirectUri, grant_type: 'authorization_code',
       }),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
     });
   } catch {
     return null;

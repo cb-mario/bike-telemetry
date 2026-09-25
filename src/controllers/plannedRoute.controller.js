@@ -1,6 +1,7 @@
 const plannedRouteService = require('../services/plannedRoute.service');
 const { routeLeg, ROUTING_PROFILES } = require('../services/routing.service');
 const { HttpError } = require('../middlewares/errorHandler');
+const { parseNumber } = require('../utils/validation');
 
 const ROUTING_MODES = [...ROUTING_PROFILES, 'straight'];
 const MAX_WAYPOINTS = 200;
@@ -58,7 +59,11 @@ async function leg(req, res) {
 }
 
 async function list(req, res) {
-  res.json(await plannedRouteService.list(req.user.id));
+  const { limit } = req.query;
+  const options = limit !== undefined
+    ? { limit: parseNumber(Number(limit), 'limit', { min: 1, max: 100, integer: true }) }
+    : {};
+  res.json(await plannedRouteService.list(req.user.id, options));
 }
 
 async function getById(req, res) {

@@ -34,8 +34,9 @@ function countByUser(filters) {
 }
 
 // Actividades con recorrido (polilínea o track) para pintarlas en el mapa
-function findRoutes({ userId, from, to }) {
+function findRoutes({ userId, from, to, limit }) {
   return prisma.activity.findMany({
+    take: limit,
     where: { ...buildWhere({ userId, from, to }), OR: [{ summaryPolyline: { not: null } }, { track: { isNot: null } }] },
     orderBy: { date: 'desc' },
     select: {

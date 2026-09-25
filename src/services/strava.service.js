@@ -19,6 +19,8 @@ const SYNC_PAGE_SIZE = 30;
 const RIDE_TYPES = ['Ride', 'VirtualRide'];
 // Renovar el token si caduca en menos de este margen
 const REFRESH_MARGIN_MS = 60 * 1000;
+// Una petición a Strava que tarde más se da por fallida (no deja la petición del usuario colgada)
+const TIMEOUT_MS = 15000;
 
 function config() {
   return {
@@ -69,7 +71,7 @@ function authorizeUrl(state) {
 async function stravaRequest(url, options) {
   let res;
   try {
-    res = await fetch(url, options);
+    res = await fetch(url, { ...options, signal: AbortSignal.timeout(TIMEOUT_MS) });
   } catch {
     throw new HttpError(502, 'No se puede conectar con Strava');
   }
@@ -342,7 +344,9 @@ async function disconnect(userId) {
   if (user?.stravaAccessToken && isConfigured()) {
     try {
       const token = await getAccessToken(user);
-      await fetch(`${STRAVA_OAUTH}/deauthorize`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+      await fetch(`${STRAVA_OAUTH}/deauthorize`, {
+        method: 'POST', headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(TIMEOUT_MS),
+      });
     } catch {
       // Aunque Strava no responda, se desvincula localmente
     }

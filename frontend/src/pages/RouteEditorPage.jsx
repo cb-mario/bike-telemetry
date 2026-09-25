@@ -21,6 +21,8 @@ import { Icon } from '../components/ui/Icon'
 
 let nextId = 1
 const waypoint = (lat, lon) => ({ id: nextId++, lat, lon })
+// Salidas recientes para encuadrar el mapa y mostrarlas como referencia
+const RECENT_RIDES = 100
 
 // Añade un punto al pulsar en el mapa
 function ClickToAdd({ onAdd }) {
@@ -68,16 +70,17 @@ export function RouteEditorPage() {
   const geometry = openedGeometry ?? legs.geometry
   const loading = !openedGeometry && legs.loading
   const error = openedGeometry ? null : legs.error
-  const distance = geometry.length > 1 ? lengthKm(geometry) : 0
+  // Memorizados: el perfil actualiza `hover` con cada movimiento del ratón
+  const distance = useMemo(() => (geometry.length > 1 ? lengthKm(geometry) : 0), [geometry])
   const gain = useMemo(() => elevationGain(geometry), [geometry])
   const profilePoints = useMemo(() => withDistance([geometry]), [geometry])
-  const hasElevation = geometry.filter((c) => c[2] != null).length > 1
+  const hasElevation = useMemo(() => geometry.filter((c) => c[2] != null).length > 1, [geometry])
 
   useEffect(() => {
     // Velocidad media histórica para estimar el tiempo de la ruta
     api('/stats/summary').then((s) => setAvgSpeed(s.avgSpeedKmh)).catch(() => {})
     // Encuadre inicial: la zona donde sueles rodar (sin salidas virtuales), para marcar puntos con buen zoom
-    api('/activities/routes')
+    api('/activities/routes', { query: { limit: RECENT_RIDES } })
       .then((list) => {
         setRides(list)
         const real = list.filter((r) => r.sportType !== 'VirtualRide')

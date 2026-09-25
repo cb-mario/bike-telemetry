@@ -22,18 +22,31 @@ function computeMetrics(geometry) {
   };
 }
 
+const previewOf = (geometry) => [simplifyCoords(geometry, PREVIEW_POINTS)];
+
 // Listado: sin el trazado completo, con miniatura
-function toSummary({ geometry, ...route }) {
-  const coords = JSON.parse(geometry);
-  return { ...route, preview: [simplifyCoords(coords, PREVIEW_POINTS)] };
+function toSummary({ preview, ...route }) {
+  return { ...route, preview: JSON.parse(preview) };
 }
 
-function toDetail(route) {
+function toDetail({ preview, waypoints, geometry, ...route }) {
+  const coords = JSON.parse(geometry);
   return {
-    ...toSummary(route),
-    waypoints: JSON.parse(route.waypoints),
-    geometry: JSON.parse(route.geometry),
+    ...route,
+    preview: preview ? JSON.parse(preview) : previewOf(coords),
+    waypoints: JSON.parse(waypoints),
+    geometry: coords,
   };
+}
+
+// Rutas guardadas antes de existir la columna preview: se calcula una vez y se guarda
+async function fillMissingPreviews(routes) {
+  const missing = routes.filter((r) => r.preview == null);
+  if (!missing.length) return routes;
+  const rows = await PlannedRoute.findGeometries(missing.map((r) => r.id));
+  const previews = new Map(rows.map((r) => [r.id, JSON.stringify(previewOf(JSON.parse(r.geometry)))]));
+  await Promise.all([...previews].map(([id, preview]) => PlannedRoute.setPreview(id, preview)));
+  return routes.map((r) => (r.preview == null ? { ...r, preview: previews.get(r.id) } : r));
 }
 
 async function getOwnedOrFail(id, userId) {
@@ -42,8 +55,9 @@ async function getOwnedOrFail(id, userId) {
   return route;
 }
 
-async function list(userId) {
-  return (await PlannedRoute.findManyByUser(userId)).map(toSummary);
+async function list(userId, { limit } = {}) {
+  const routes = await fillMissingPreviews(await PlannedRoute.findManyByUser(userId, { limit }));
+  return routes.map(toSummary);
 }
 
 async function getById(id, userId) {
@@ -56,6 +70,7 @@ function toData({ name, routing, waypoints, geometry }) {
     routing,
     waypoints: JSON.stringify(waypoints),
     geometry: JSON.stringify(geometry),
+    preview: JSON.stringify(previewOf(geometry)),
     ...computeMetrics(geometry),
   };
 }

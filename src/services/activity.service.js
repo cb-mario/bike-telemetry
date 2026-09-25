@@ -68,8 +68,8 @@ async function update(id, userId, changes) {
 }
 
 // Todas las rutas del usuario para el mapa del explorador
-async function routes(userId, { from, to }) {
-  const rows = await Activity.findRoutes({ userId, from, to });
+async function routes(userId, { from, to, limit }) {
+  const rows = await Activity.findRoutes({ userId, from, to, limit });
   return rows
     .map(({ track, summaryPolyline, ...a }) => ({ ...a, segments: routeSegments({ track, summaryPolyline }, MAX_MAP_POINTS) }))
     .filter((r) => r.segments);
