@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 
 const healthRoutes = require('./routes/health.routes');
 const authRoutes = require('./routes/auth.routes');
@@ -12,11 +13,16 @@ const { notFound, errorHandler } = require('./middlewares/errorHandler');
 // Aplicación Express sin arrancar (server.js la pone a escuchar; los tests la usan directamente)
 const app = express();
 
+// Detrás de un proxy inverso (nginx, Caddy…), para que el límite de intentos vea la IP real
+if (process.env.TRUST_PROXY) app.set('trust proxy', Number(process.env.TRUST_PROXY) || process.env.TRUST_PROXY);
+
 // Middlewares globales
-app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
-// 2 MB: las rutas planificadas envían su trazado completo
-app.use(express.json({ limit: '2mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(helmet());
+// Solo el frontend puede llamar a la API desde el navegador (nunca "*")
+app.use(cors({ origin: process.env.CORS_ORIGIN || process.env.FRONTEND_URL || 'http://localhost:5173' }));
+// Las rutas planificadas envían su trazado completo (hasta 2 MB); el resto, el límite por defecto (100 kB)
+app.use('/api/planned-routes', express.json({ limit: '2mb' }));
+app.use(express.json());
 
 // Rutas
 app.use('/api/health', healthRoutes);

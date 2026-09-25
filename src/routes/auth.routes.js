@@ -2,12 +2,14 @@ const { Router } = require('express');
 
 const authController = require('../controllers/auth.controller');
 const authMiddleware = require('../middlewares/authMiddleware');
+const { authLimiters } = require('../middlewares/rateLimit');
 
 const router = Router();
+const limit = authLimiters({ skip: () => process.env.NODE_ENV === 'test' });
 
-router.post('/register', authController.register);
-router.post('/login', authController.login);
-router.post('/exchange', authController.exchange);
+router.post('/register', limit.register, authController.register);
+router.post('/login', limit.login, authController.login);
+router.post('/exchange', limit.exchange, authController.exchange);
 
 // Strava y Google: acceso sin contraseña
 router.get('/strava/url', authController.stravaLoginUrl);

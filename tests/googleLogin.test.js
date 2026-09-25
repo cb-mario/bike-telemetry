@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const jwt = require('jsonwebtoken');
 
 const { app, prisma, request, resetDb, registerUser, PASSWORD } = require('./helpers/utils');
+const { signToken } = require('../src/services/auth.service');
 
 const FRONT = 'http://front.test';
 const CLIENT_ID = 'google-client.apps.googleusercontent.com';
@@ -174,7 +175,7 @@ describe('Iniciar sesión con Google', () => {
 
     it('una cuenta de Strava con Google vinculado sí puede desconectar Strava', async () => {
       const user = await prisma.user.create({ data: { stravaAthleteId: '99', googleId: 'g-9' } });
-      const t = jwt.sign({ sub: String(user.id) }, process.env.JWT_SECRET, { algorithm: 'HS256' });
+      const t = signToken(user);
       const status = await request(app).get('/api/strava/status').set('Authorization', `Bearer ${t}`);
       assert.equal(status.body.canDisconnect, true);
     });

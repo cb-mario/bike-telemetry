@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const jwt = require('jsonwebtoken');
 
 const { app, prisma, request, resetDb, registerUser, PASSWORD } = require('./helpers/utils');
+const { signToken } = require('../src/services/auth.service');
 const { mockStrava, restoreFetch } = require('./helpers/stravaMock');
 const { decrypt, encrypt } = require('../src/utils/crypto');
 
@@ -126,7 +127,7 @@ describe('Iniciar sesión con Strava', () => {
         stravaTokenExpiresAt: new Date(Date.now() + 3600 * 1000),
       },
     });
-    const token = jwt.sign({ sub: String(user.id) }, process.env.JWT_SECRET, { algorithm: 'HS256' });
+    const token = signToken(user);
     mockStrava({ '/api/v3/athlete/activities': () => [401, { message: 'Authorization Error' }] });
 
     const res = await request(app).post('/api/strava/sync').set('Authorization', `Bearer ${token}`);

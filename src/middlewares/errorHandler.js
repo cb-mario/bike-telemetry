@@ -23,6 +23,7 @@ function errorHandler(err, req, res, next) {
   let message = err.message;
   if (status >= 500 && !expected) message = 'Error interno del servidor';
   else if (err.type === 'entity.parse.failed') message = 'JSON mal formado';
+  else if (err.type === 'entity.too.large') message = 'La petición es demasiado grande';
 
   res.status(status).json({ error: message });
 }

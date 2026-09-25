@@ -107,6 +107,18 @@ describe('Auth', () => {
       assert.equal((await me(token)).status, 401);
     });
 
+    // El state de OAuth y el ticket de login se firman con el mismo secreto, pero no son sesiones
+    for (const purpose of ['strava-oauth', 'google-link', 'login-ticket', undefined]) {
+      it(`JWT válido con propósito ${purpose ?? '(ninguno)'} no sirve como sesión → 401`, async () => {
+        const token = await registerUser('rider@test.local');
+        const { sub } = jwt.decode(token);
+        const other = jwt.sign({ sub, ...(purpose && { purpose }) }, process.env.JWT_SECRET, { algorithm: 'HS256' });
+        const res = await me(other);
+        assert.equal(res.status, 401);
+        assert.equal(res.body.error, 'Token inválido');
+      });
+    }
+
     it('token de un usuario borrado → 404', async () => {
       const token = await registerUser('rider@test.local');
       await resetDb();
