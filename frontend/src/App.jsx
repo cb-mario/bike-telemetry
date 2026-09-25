@@ -8,7 +8,9 @@ import { SummaryPage } from './pages/SummaryPage'
 import { RidesPage } from './pages/RidesPage'
 import { RoutesLibraryPage } from './pages/RoutesLibraryPage'
 import { ProfilePage } from './pages/ProfilePage'
+import { LandingPage } from './pages/LandingPage'
 import { Backdrop } from './components/Backdrop'
+import { TooltipProvider } from '@/components/ui/tooltip'
 
 // Las páginas con mapa (Leaflet) se cargan solo al abrirlas
 const ActivityDetailPage = lazy(() => import('./pages/ActivityDetailPage').then((m) => ({ default: m.ActivityDetailPage })))
@@ -33,12 +35,19 @@ export default function App() {
       </div>
     )
   }
+  // Sin sesión: landing pública en /inicio, alta en /registro y login en cualquier otra dirección
   if (!user) {
     return (
-      <>
+      <BrowserRouter>
         <Backdrop />
-        <AuthPage />
-      </>
+        <TooltipProvider delay={250}>
+          <Routes>
+            <Route path="inicio" element={<LandingPage />} />
+            <Route path="registro" element={<AuthPage initialMode="register" />} />
+            <Route path="*" element={<AuthPage />} />
+          </Routes>
+        </TooltipProvider>
+      </BrowserRouter>
     )
   }
 
@@ -46,8 +55,12 @@ export default function App() {
     <BrowserRouter>
       <Backdrop />
       <AppProvider>
+        <TooltipProvider delay={250}>
         <Suspense fallback={<PageFallback />}>
           <Routes>
+            {/* La landing sigue accesible con sesión, con su llamada a la acción apuntando al Resumen */}
+            <Route path="inicio" element={<LandingPage />} />
+            <Route path="registro" element={<Navigate to="/" replace />} />
             <Route element={<AppShell />}>
               <Route index element={<SummaryPage />} />
               {/* Salidas: lo que ya has rodado */}
@@ -65,6 +78,7 @@ export default function App() {
             </Route>
           </Routes>
         </Suspense>
+        </TooltipProvider>
       </AppProvider>
     </BrowserRouter>
   )

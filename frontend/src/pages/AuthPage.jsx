@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router'
 import { useAuth } from '../context/AuthContext'
 import { Button } from '../components/ui/Button'
 import { Field, FormError, Input } from '../components/ui/Field'
@@ -51,20 +52,25 @@ function LoginForm() {
   )
 }
 
-export function AuthPage() {
-  const [mode, setMode] = useState('login')
+export function AuthPage({ initialMode = 'login' }) {
+  const [mode, setMode] = useState(initialMode)
 
   return (
     <main className="grid min-h-svh lg:grid-cols-2">
       <AuthHero />
       <div className="flex flex-col items-center justify-center px-4 py-12">
-        <Logo className="mb-8 lg:hidden" />
-        <div className="w-full max-w-md rounded-3xl border border-zinc-700/50 bg-zinc-900/70 p-6 shadow-[0_30px_80px_-30px_rgb(37_99_235/0.45),inset_0_1px_0_0_rgb(255_255_255/0.05)] backdrop-blur-xl animate-rise-in sm:p-8">
-          <div className="mb-8">
+        <Link to="/inicio" aria-label="Conoce BikeTelemetry" className="mb-8 rounded-md focus-visible:outline-2 focus-visible:outline-brand-2 lg:hidden">
+          <Logo />
+        </Link>
+        <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-[inset_0_1px_0_0_rgb(255_255_255/0.04),0_24px_48px_-24px_rgb(0_0_0/0.6)] animate-rise-in sm:p-8">
+          <div className="mb-6">
             <SegmentedControl label="Modo" options={MODES} value={mode} onChange={setMode} />
           </div>
           {mode === 'login' ? <LoginForm /> : <RegisterSteps />}
         </div>
+        <Link to="/inicio" className="mt-6 text-sm text-zinc-400 underline decoration-zinc-700 underline-offset-4 transition-colors hover:text-zinc-100">
+          ¿Qué es BikeTelemetry?
+        </Link>
       </div>
     </main>
   )

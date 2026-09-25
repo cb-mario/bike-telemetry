@@ -1,6 +1,7 @@
 // Dibujo del recorrido a partir de la miniatura [[lat, lon], ...] por segmento
 // Proyección equirectangular corregida por latitud: suficiente para rutas de una salida
-export function RoutePreview({ segments, width, height, padding = 4, markers = false, className = '' }) {
+// `active` ([lat, lon]) marca un punto del recorrido, p. ej. el que se señala en el perfil de altitud
+export function RoutePreview({ segments, width, height, padding = 4, markers = false, active = null, strokeWidth = 2, className = '' }) {
   const points = segments.flat()
   if (points.length < 2) return null
 
@@ -27,7 +28,7 @@ export function RoutePreview({ segments, width, height, padding = 4, markers = f
   return (
     <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className={className} aria-hidden>
       {paths.map((d, i) => (
-        <path key={i} d={d} fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="stroke-series" />
+        <path key={i} d={d} fill="none" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className="stroke-series" />
       ))}
       {markers && (
         <>
@@ -35,6 +36,10 @@ export function RoutePreview({ segments, width, height, padding = 4, markers = f
           <circle cx={end[0]} cy={end[1]} r="4" strokeWidth="2" className="fill-series stroke-zinc-900" />
         </>
       )}
+      {active && (() => {
+        const [ax, ay] = project(active)
+        return <circle cx={ax} cy={ay} r="6" strokeWidth="2.5" className="fill-elev stroke-zinc-900" />
+      })()}
     </svg>
   )
 }

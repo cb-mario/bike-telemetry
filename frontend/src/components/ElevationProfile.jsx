@@ -5,7 +5,7 @@ import { sample } from '../lib/track'
 import { THEME } from '../lib/theme'
 
 const DEFAULT_HEIGHT = 200
-const M = { top: 16, right: 12, bottom: 26, left: 44 }
+const M = { top: 24, right: 12, bottom: 26, left: 44 }
 
 function niceStep(span, ticks = 4) {
   const raw = span / ticks
@@ -70,7 +70,7 @@ export function ElevationProfile({ points, activeIndex, onActiveChange, height: 
               {formatNumber(k, kmStep < 1 ? 1 : 0)}
             </text>
           ))}
-          <text x={M.left - 8} y={M.top - 6} textAnchor="end" className="fill-zinc-500 text-[11px]">m</text>
+          <text x={M.left - 8} y={M.top - 14} textAnchor="end" className="fill-zinc-500 text-[11px]">m</text>
           <text x={width - M.right} y={HEIGHT - 6} textAnchor="end" className="fill-zinc-500 text-[11px]">km</text>
 
           <path d={area} className="animate-fade-in fill-elev/20" />
