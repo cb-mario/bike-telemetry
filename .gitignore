@@ -7,7 +7,3 @@ node_modules/
 *.db-journal
 
 /src/generated/prisma
-
-# Capturas de revisión de diseño y caché del hook de Impeccable
-.impeccable/review/
-.impeccable/hook.cache.json
