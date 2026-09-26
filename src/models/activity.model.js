@@ -54,11 +54,19 @@ function create(userId, data) {
   return prisma.activity.create({ data: { ...data, userId }, include: withPreview });
 }
 
-// Crea la actividad y su track en una sola operación
-function createWithTrack(userId, data, track) {
+// Crea la actividad importada de un archivo y, si tiene GPS, su track en una sola operación
+function createWithTrack(userId, data, track, source = 'gpx') {
   return prisma.activity.create({
-    data: { ...data, userId, source: 'gpx', track: { create: track } },
+    data: { ...data, userId, source, ...(track && { track: { create: track } }) },
     include: withPreview,
+  });
+}
+
+// Salida del usuario que empezó a la misma hora (± margen): la misma grabada otra vez o ya importada
+function findStartingNear(userId, date, marginMs) {
+  return prisma.activity.findFirst({
+    where: { userId, date: { gte: new Date(date.getTime() - marginMs), lte: new Date(date.getTime() + marginMs) } },
+    select: { id: true, title: true },
   });
 }
 
@@ -110,5 +118,5 @@ async function maxRecordedHr(userId) {
 
 module.exports = {
   findForStats, maxRecordedHr, findManyByUser, countByUser, findRoutes, findByIdForUser,
-  create, createWithTrack, findTrack, createTrack, findExistingStravaIds, oldestStravaDate, update, remove,
+  create, createWithTrack, findStartingNear, findTrack, createTrack, findExistingStravaIds, oldestStravaDate, update, remove,
 };

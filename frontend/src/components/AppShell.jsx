@@ -16,6 +16,7 @@ import { NewActivity } from './NewActivity'
 import { Toaster } from './Toaster'
 import { DropOverlay } from './FileDrop'
 import { useWindowFileDrag } from '../lib/useWindowFileDrag'
+import { hasFitFile, pickActivityFiles } from '../lib/deviceFiles'
 import { gpxHasTimes, importRouteGpx } from '../lib/planner'
 
 const SECTIONS = [
@@ -31,9 +32,13 @@ export function AppShell() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  // GPX soltado sobre la app: con tiempos es una salida grabada; sin tiempos, una ruta planificada
-  async function handleDroppedFile(file) {
-    if (!/\.gpx$/i.test(file.name)) return toast('Solo se admiten archivos .gpx', 'error')
+  // Varios archivos, una carpeta o algún .fit: salidas del ciclocomputador, que se importan de una vez.
+  // Un GPX suelto: con tiempos es una salida grabada; sin tiempos, una ruta planificada
+  async function handleDroppedFile(first, allFiles) {
+    const files = pickActivityFiles(await allFiles.catch(() => [first]))
+    if (files.length > 1 || hasFitFile(files)) return openNewActivity('device', files)
+    const file = files[0]
+    if (!file || !/\.gpx$/i.test(file.name)) return toast('Solo se admiten archivos .gpx o .fit', 'error')
     if (await gpxHasTimes(file)) return openNewActivity('gpx', file)
     try {
       const route = await importRouteGpx(file)

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ActivityForm } from './ActivityForm'
+import { DeviceImport } from './DeviceImport'
 import { GpxDropzone } from './GpxDropzone'
 import { RoutePreview } from './RoutePreview'
 import { Button } from './ui/Button'
@@ -10,10 +11,12 @@ import { Icon } from './ui/Icon'
 
 const MODES = [
   { value: 'gpx', label: 'Importar GPX' },
+  { value: 'device', label: 'Ciclocomputador' },
   { value: 'manual', label: 'Manual' },
 ]
 
-// Contenido del modal "Nueva salida": importación GPX (por defecto) o formulario manual
+// Contenido del modal "Nueva salida": importación GPX (por defecto), carga desde el
+// ciclocomputador (varios .fit/.gpx; `initialFile` es entonces la lista soltada) o formulario manual
 export function NewActivity({ initialMode = 'gpx', initialFile, onCreated, onClose }) {
   const [mode, setMode] = useState(initialMode)
   const [imported, setImported] = useState(null)
@@ -29,7 +32,14 @@ export function NewActivity({ initialMode = 'gpx', initialFile, onCreated, onClo
       <div className="self-start">
         <SegmentedControl label="Tipo de registro" options={MODES} value={mode} onChange={setMode} />
       </div>
-      {mode === 'gpx' ? (
+      {mode === 'device' ? (
+        <DeviceImport
+          initialFiles={Array.isArray(pendingFile) ? pendingFile : null}
+          onInitialFilesUsed={() => setPendingFile(null)}
+          onImported={onCreated}
+          onClose={onClose}
+        />
+      ) : mode === 'gpx' ? (
         <GpxDropzone
           initialFile={pendingFile}
           onInitialFileUsed={() => setPendingFile(null)}

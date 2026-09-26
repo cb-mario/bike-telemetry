@@ -4,9 +4,14 @@ const polyline = require('../utils/polyline');
 const { parseActivity } = require('../utils/activityValidation');
 const { simplifyCoords, MAX_PREVIEW_POINTS } = require('./track.service');
 const { analyzeGpx } = require('./gpx.service');
+const { analyzeFit } = require('./fit.service');
 const stravaService = require('./strava.service');
 
 const MAX_MAP_POINTS = 200;
+// Dos salidas que empiezan con menos de un minuto de diferencia se consideran la misma
+const DUPLICATE_MARGIN_MS = 60 * 1000;
+
+const FORMAT_LABEL = { gpx: 'GPX', fit: 'FIT' };
 
 // Coordenadas del recorrido por segmentos: track guardado o, si no, la polilínea de Strava
 function routeSegments({ track, summaryPolyline }, maxPoints) {
@@ -59,9 +64,12 @@ async function create(userId, data) {
   return toPublic(await Activity.create(userId, data));
 }
 
-// Crea la actividad y su track a partir de un .gpx; `title` opcional (si no, el del GPX o la fecha)
-async function importGpx(userId, buffer, title) {
-  const { name, stats, track, summaryPolyline } = analyzeGpx(buffer);
+// Crea la actividad (y su track, si hay GPS) a partir de un .gpx o un .fit.
+// `title` opcional: si no, el del archivo o la fecha. Con `skipDuplicates`, 409 si ya existe
+// una salida que empezó a la misma hora (para poder cargar varias veces la misma carpeta).
+async function importFile(userId, buffer, { format = 'gpx', title, skipDuplicates = false } = {}) {
+  const analysis = format === 'fit' ? await analyzeFit(buffer) : analyzeGpx(buffer);
+  const { name, stats, track, summaryPolyline, sportType } = analysis;
   const finalTitle = title?.trim() || name?.trim() || `Salida del ${stats.startTime.toISOString().slice(0, 10)}`;
 
   // Los datos calculados pasan por la misma validación que una actividad manual
@@ -76,14 +84,18 @@ async function importGpx(userId, buffer, title) {
       avgHr: stats.avgHr,
       maxHr: stats.maxHr,
       maxSpeedKmh: stats.maxSpeedKmh,
+      ...(sportType && { sportType }),
     }, { partial: false });
   } catch (err) {
-    if (err instanceof HttpError) throw new HttpError(400, `El GPX genera datos no válidos: ${err.message}`);
+    if (err instanceof HttpError) throw new HttpError(400, `El ${FORMAT_LABEL[format]} genera datos no válidos: ${err.message}`);
     throw err;
   }
 
   assertHeartRateCoherent(data);
-  return toPublic(await Activity.createWithTrack(userId, { ...data, summaryPolyline }, track));
+  const existing = skipDuplicates && await Activity.findStartingNear(userId, data.date, DUPLICATE_MARGIN_MS);
+  if (existing) throw new HttpError(409, `Esta salida ya está guardada («${existing.title}»)`);
+
+  return toPublic(await Activity.createWithTrack(userId, { ...data, summaryPolyline }, track, format));
 }
 
 async function update(id, userId, changes) {
@@ -125,4 +137,4 @@ async function remove(id, userId) {
   await Activity.remove(id);
 }
 
-module.exports = { list, routes, getById, create, importGpx, update, remove, getTrack };
+module.exports = { list, routes, getById, create, importFile, update, remove, getTrack };

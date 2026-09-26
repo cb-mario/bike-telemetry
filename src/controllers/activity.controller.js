@@ -69,7 +69,16 @@ async function update(req, res) {
 async function uploadGpx(req, res) {
   if (!req.file) throw new HttpError(400, 'Adjunta un archivo .gpx en el campo "file"');
   const title = typeof req.body?.title === 'string' ? req.body.title : undefined;
-  res.status(201).json(await activityService.importGpx(req.user.id, req.file.buffer, title));
+  res.status(201).json(await activityService.importFile(req.user.id, req.file.buffer, { format: 'gpx', title }));
+}
+
+// Importa una salida grabada en .gpx o .fit (multipart, campo "file"; "title" opcional).
+// Pensado para cargar de una vez las actividades del ciclocomputador: 409 si ya está guardada
+async function importFile(req, res) {
+  if (!req.file) throw new HttpError(400, 'Adjunta un archivo .gpx o .fit en el campo "file"');
+  const format = /\.fit$/i.test(req.file.originalname) ? 'fit' : 'gpx';
+  const title = typeof req.body?.title === 'string' ? req.body.title : undefined;
+  res.status(201).json(await activityService.importFile(req.user.id, req.file.buffer, { format, title, skipDuplicates: true }));
 }
 
 // Sin ?limit devuelve todas; el planificador pide solo las más recientes
@@ -89,4 +98,4 @@ async function remove(req, res) {
   res.status(204).end();
 }
 
-module.exports = { list, routes, getById, create, uploadGpx, getTrack, update, remove };
+module.exports = { list, routes, getById, create, uploadGpx, importFile, getTrack, update, remove };
