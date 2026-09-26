@@ -18,6 +18,17 @@ describe('App', () => {
     assert.equal(res.body.status, 'ok');
   });
 
+  it('GET /api/auth/providers dice qué accesos externos están configurados', async () => {
+    assert.deepEqual((await request(app).get('/api/auth/providers')).body, { google: true, strava: true });
+    const saved = process.env.STRAVA_CLIENT_ID;
+    delete process.env.STRAVA_CLIENT_ID;
+    try {
+      assert.deepEqual((await request(app).get('/api/auth/providers')).body, { google: true, strava: false });
+    } finally {
+      process.env.STRAVA_CLIENT_ID = saved;
+    }
+  });
+
   it('ruta inexistente → 404 con formato de error uniforme', async () => {
     const res = await request(app).get('/api/nope');
     assert.equal(res.status, 404);

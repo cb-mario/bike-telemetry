@@ -399,5 +399,5 @@ async function disconnect(userId) {
 }
 
 module.exports = {
-  buildAuthUrl, buildLoginUrl, handleCallback, sync, importStreams, status, disconnect, mapStravaActivity,
+  isConfigured, buildAuthUrl, buildLoginUrl, handleCallback, sync, importStreams, status, disconnect, mapStravaActivity,
 };

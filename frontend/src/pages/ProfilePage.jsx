@@ -11,6 +11,7 @@ import { Field, FormError, Input } from '../components/ui/Field'
 import { SegmentedControl } from '../components/ui/SegmentedControl'
 import { Label } from '../components/ui/Text'
 import { StravaControls } from '../components/StravaControls'
+import { useProviders } from '../lib/providers'
 import { GoogleAccess } from '../components/GoogleAccess'
 import { InfoTip } from '../components/InfoTip'
 import { PageHeader } from '../components/PageHeader'
@@ -66,6 +67,7 @@ function EstimateTile({ label, value, unit, hint, accent, info, className = '' }
 export function ProfilePage() {
   const { user, setUser, logout } = useAuth()
   const { toast, refresh } = useApp()
+  const providers = useProviders()
   const [form, setForm] = useState(() => toForm(user))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -199,17 +201,21 @@ export function ProfilePage() {
             </Card>
           )}
 
-          <Card className="p-5">
-            <h2 className="text-sm font-medium text-zinc-100">Strava</h2>
-            <p className="mt-1 mb-4 text-xs text-zinc-500">Sincroniza tus salidas automáticamente.</p>
-            <div className="flex justify-start [&>div]:items-start"><StravaControls /></div>
-          </Card>
+          {providers?.strava && (
+            <Card className="p-5">
+              <h2 className="text-sm font-medium text-zinc-100">Strava</h2>
+              <p className="mt-1 mb-4 text-xs text-zinc-500">Sincroniza tus salidas automáticamente.</p>
+              <div className="flex justify-start [&>div]:items-start"><StravaControls /></div>
+            </Card>
+          )}
 
-          <Card className="p-5">
-            <h2 className="text-sm font-medium text-zinc-100">Google</h2>
-            <p className="mt-1 mb-4 text-xs text-zinc-500">Entra con tu cuenta de Google sin contraseña.</p>
-            <GoogleAccess />
-          </Card>
+          {providers?.google && (
+            <Card className="p-5">
+              <h2 className="text-sm font-medium text-zinc-100">Google</h2>
+              <p className="mt-1 mb-4 text-xs text-zinc-500">Entra con tu cuenta de Google sin contraseña.</p>
+              <GoogleAccess />
+            </Card>
+          )}
         </div>
       </div>
     </main>

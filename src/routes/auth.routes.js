@@ -15,6 +15,7 @@ router.post('/forgot-password', limit.forgotPassword, authController.forgotPassw
 router.post('/reset-password', limit.resetPassword, authController.resetPassword);
 
 // Strava y Google: acceso sin contraseña
+router.get('/providers', authController.providers);
 router.get('/strava/url', authController.stravaLoginUrl);
 router.get('/google/url', authController.googleLoginUrl);
 // Pública: la llama el navegador al volver de Google (el usuario se identifica por "state")

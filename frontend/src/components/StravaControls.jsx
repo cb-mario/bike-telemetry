@@ -58,6 +58,9 @@ export function StravaControls() {
     }
   }
 
+  // Sin credenciales de Strava en el servidor no se ofrece nada
+  if (status && !status.configured) return null
+
   const connected = status?.connected
   return (
     <div className="flex flex-col items-end gap-1">

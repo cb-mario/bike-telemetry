@@ -87,6 +87,11 @@ async function updateMe(req, res) {
   res.json({ user: await profileService.updateProfile(req.user.id, changes) });
 }
 
+// Accesos externos configurados en el servidor (público): la interfaz oculta los que no lo están
+async function providers(req, res) {
+  res.json({ google: googleService.isConfigured(), strava: stravaService.isConfigured() });
+}
+
 // "Continuar con Strava" (público): URL de autorización de Strava
 async function stravaLoginUrl(req, res) {
   res.json({ url: stravaService.buildLoginUrl() });
@@ -125,6 +130,6 @@ async function googleUnlink(req, res) {
 }
 
 module.exports = {
-  register, login, forgotPassword, resetPassword, me, updateMe, stravaLoginUrl, exchange,
+  register, login, forgotPassword, resetPassword, me, updateMe, providers, stravaLoginUrl, exchange,
   googleLoginUrl, googleLinkUrl, googleCallback, googleStatus, googleUnlink,
 };

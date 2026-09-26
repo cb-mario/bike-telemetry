@@ -4,6 +4,7 @@ import { Button } from '../ui/Button'
 import { FormError } from '../ui/Field'
 import { loginWithStrava, STRAVA_LOGIN_ERROR } from '../../lib/strava'
 import { loginWithGoogle, GOOGLE_LOGIN_ERROR } from '../../lib/google'
+import { useProviders } from '../../lib/providers'
 
 // Logotipo "G" oficial de Google (Google Identity branding guidelines: no se modifica ni recolorea)
 function GoogleG() {
@@ -22,8 +23,10 @@ const UNAVAILABLE = {
   google: 'El acceso con Google no está disponible ahora mismo. Entra con tu email.',
 }
 
-// "Continuar con Google / Strava": entra en la cuenta vinculada o crea una nueva
+// "Continuar con Google / Strava": entra en la cuenta vinculada o crea una nueva.
+// Solo aparecen los proveedores configurados en el servidor
 export function SocialLogin() {
+  const providers = useProviders()
   const [searchParams] = useSearchParams()
   const [loading, setLoading] = useState(null)
   const [error, setError] = useState(() => {
@@ -46,21 +49,27 @@ export function SocialLogin() {
     }
   }
 
+  if (!providers?.google && !providers?.strava) return <FormError>{error}</FormError>
+
   return (
     <div className="flex flex-col gap-3">
       {/* Botón de Google con los colores de su guía para fondo oscuro */}
-      <button type="button" onClick={() => start('google', loginWithGoogle)} disabled={Boolean(loading)}
-        aria-busy={loading === 'google' || undefined}
-        className="inline-flex h-10 w-full items-center justify-center gap-2.5 rounded-lg border border-[#8e918f] bg-[#131314] text-sm font-medium text-[#e3e3e3]
-          transition-colors duration-150 hover:bg-[#1f1f20] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-2
-          disabled:opacity-60">
-        <GoogleG />
-        {loading === 'google' ? 'Abriendo Google…' : 'Continuar con Google'}
-      </button>
-      <Button variant="strava" className="h-10 w-full" onClick={() => start('strava', loginWithStrava)}
-        loading={loading === 'strava'} disabled={loading === 'google'}>
-        Continuar con Strava
-      </Button>
+      {providers.google && (
+        <button type="button" onClick={() => start('google', loginWithGoogle)} disabled={Boolean(loading)}
+          aria-busy={loading === 'google' || undefined}
+          className="inline-flex h-10 w-full items-center justify-center gap-2.5 rounded-lg border border-[#8e918f] bg-[#131314] text-sm font-medium text-[#e3e3e3]
+            transition-colors duration-150 hover:bg-[#1f1f20] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-2
+            disabled:opacity-60">
+          <GoogleG />
+          {loading === 'google' ? 'Abriendo Google…' : 'Continuar con Google'}
+        </button>
+      )}
+      {providers.strava && (
+        <Button variant="strava" className="h-10 w-full" onClick={() => start('strava', loginWithStrava)}
+          loading={loading === 'strava'} disabled={loading === 'google'}>
+          Continuar con Strava
+        </Button>
+      )}
       <FormError>{error}</FormError>
       <div className="flex items-center gap-3 text-xs text-zinc-500" aria-hidden>
         <span className="h-px flex-1 bg-zinc-800" />o con tu email<span className="h-px flex-1 bg-zinc-800" />

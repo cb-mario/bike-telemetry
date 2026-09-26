@@ -54,10 +54,21 @@ Sin SMTP la app funciona, pero el enlace de recuperación solo se escribe en los
 2. Crea una **contraseña de aplicación** en [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords).
 3. `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=465`, `SMTP_USER=tu@gmail.com`, `SMTP_PASS=<la contraseña de aplicación>`, `MAIL_FROM="BikeTelemetry <tu@gmail.com>"`.
 
-### Strava y Google
+### Strava
 
-- **Strava** ([strava.com/settings/api](https://www.strava.com/settings/api)): cambia *Authorization Callback Domain* a `TU-PROYECTO.vercel.app`.
-- **Google Cloud Console** → Credenciales → tu cliente OAuth: añade `https://TU-PROYECTO.vercel.app/api/auth/google/callback` a los URI de redirección autorizados.
+Es opcional: mientras falten sus variables, la app oculta «Continuar con Strava» y los botones de sincronizar, y aparecen solos al configurarlas. Lo mismo con Google.
+
+1. En [strava.com/settings/api](https://www.strava.com/settings/api) pulsa **Edit** y cambia **Authorization Callback Domain** a `TU-PROYECTO.vercel.app` (solo el dominio: sin `https://` ni rutas). `localhost` sigue funcionando en desarrollo aunque no esté puesto.
+2. En Vercel añade `STRAVA_CLIENT_ID` y `STRAVA_CLIENT_SECRET` (los de esa misma página), `STRAVA_REDIRECT_URI=https://TU-PROYECTO.vercel.app/api/strava/callback` y `TOKEN_ENCRYPTION_KEY`. Si en local ya tienes una, usa **otra nueva** en producción: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`. Sin `TOKEN_ENCRYPTION_KEY` la API no arranca con Strava configurado.
+3. **Límite de Strava:** las aplicaciones nuevas solo admiten **un atleta** (tú). Cualquier otra persona que pulse «Continuar con Strava» verá un error de Strava. Para abrirlo a más gente hay que pedir una ampliación a Strava desde esa misma página; mientras tanto, los visitantes pueden entrar con email o Google e importar GPX.
+
+### Google
+
+1. En [Google Cloud Console](https://console.cloud.google.com/apis/credentials) → **Credenciales** → tu cliente OAuth 2.0 → **URI de redireccionamiento autorizados**: añade `https://TU-PROYECTO.vercel.app/api/auth/google/callback`. Deja también el de `localhost` para seguir probando en local.
+2. En Vercel añade `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` y `GOOGLE_REDIRECT_URI=https://TU-PROYECTO.vercel.app/api/auth/google/callback`.
+3. **Pantalla de consentimiento:** mientras esté en modo **Prueba**, solo pueden entrar los usuarios de prueba que añadas a mano. Para que entre cualquiera, en **Pantalla de consentimiento de OAuth** (o *Google Auth Platform → Público*) pulsa **Publicar aplicación**. La app solo pide email y perfil básico (permisos no sensibles), así que no hace falta pasar la verificación de Google para publicarla.
+
+Las URL de vuelta deben coincidir **exactamente** (con `https`, sin barra final) en el proveedor y en Vercel. Después de cambiar variables, vuelve a desplegar.
 
 ## 3. Mapas
 
