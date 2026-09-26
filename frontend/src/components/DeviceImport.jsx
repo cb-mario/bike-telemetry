@@ -5,6 +5,7 @@ import { Icon } from './ui/Icon'
 import { Spinner } from './ui/Spinner'
 import { FormError } from './ui/Field'
 import { Reading } from './OverviewCards'
+import { IgpsportPanel } from './IgpsportConnect'
 import { droppedFiles, importFiles, pickActivityFiles } from '../lib/deviceFiles'
 import { formatNumber } from '../lib/format'
 
@@ -74,6 +75,7 @@ export function DeviceImport({ initialFiles, onInitialFilesUsed, onImported, onC
 
   return (
     <div className="flex flex-col gap-5">
+      <IgpsportPanel />
       <div
         onDragEnter={(e) => { e.preventDefault(); setDragging(true) }}
         onDragOver={(e) => e.preventDefault()}
@@ -94,7 +96,7 @@ export function DeviceImport({ initialFiles, onInitialFilesUsed, onImported, onC
           <p className="mt-1 text-xs text-zinc-500">Se importan todas las salidas de una vez · las que ya tengas se saltan</p>
         </div>
         <div className="flex flex-wrap justify-center gap-2">
-          <Button onClick={() => folderRef.current?.click()}>
+          <Button variant="secondary" onClick={() => folderRef.current?.click()}>
             <FolderOpenIcon className="size-4" />
             Elegir carpeta
           </Button>

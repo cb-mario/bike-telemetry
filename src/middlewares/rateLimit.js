@@ -67,4 +67,15 @@ function authLimiters({ skip } = {}) {
   };
 }
 
-module.exports = { authLimiters };
+// Conectar iGPSPORT reenvía email y contraseña a su servidor: que no sirva para probar contraseñas ajenas
+function igpsportConnectLimiter({ skip } = {}) {
+  return limiter({
+    windowMs: 15 * MINUTE,
+    limit: 10,
+    skipSuccessfulRequests: true,
+    skip,
+    message: 'Demasiados intentos de conectar iGPSPORT. Espera unos minutos y vuelve a probar',
+  });
+}
+
+module.exports = { authLimiters, igpsportConnectLimiter };

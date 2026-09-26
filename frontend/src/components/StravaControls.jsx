@@ -3,15 +3,7 @@ import { useApp } from '../context/AppContext'
 import { connectStrava, disconnectStrava, getStravaStatus, syncStrava } from '../lib/strava'
 import { useApiQuery } from '../lib/useApiQuery'
 import { Button } from './ui/Button'
-
-function timeAgo(iso) {
-  const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60000)
-  if (minutes < 1) return 'ahora mismo'
-  if (minutes < 60) return `hace ${minutes} min`
-  const hours = Math.round(minutes / 60)
-  if (hours < 24) return `hace ${hours} h`
-  return `hace ${Math.round(hours / 24)} d`
-}
+import { timeAgo } from '../lib/format'
 
 // Botón "Conectar con Strava" o "Sincronizar con Strava" según el estado de la cuenta
 export function StravaControls() {

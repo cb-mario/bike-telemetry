@@ -36,7 +36,14 @@ model User {
   stravaRefreshToken   String?
   stravaTokenExpiresAt DateTime?
   stravaLastSyncAt     DateTime?
-  activities           Activity[]
+
+  // Conexión con iGPSPORT (API no oficial de su web). Nunca se guarda la contraseña:
+  // solo el token de sesión, cifrado como los de Strava; al caducar hay que volver a conectar
+  igpsportAccount        String? // email de la cuenta, para mostrarlo
+  igpsportAccessToken    String?
+  igpsportTokenExpiresAt DateTime?
+  igpsportLastSyncAt     DateTime?
+  activities          Activity[]
   plannedRoutes        PlannedRoute[]
   avatar               UserAvatar?
 }
@@ -64,10 +71,11 @@ model Activity {
   maxHr           Int? // bpm (opcional)
   elevationGain   Int? // metros de desnivel positivo (opcional)
   notes           String?
-  source          String         @default("manual") // "manual" | "gpx" | "strava"
+  source          String         @default("manual") // "manual" | "gpx" | "fit" | "strava" | "igpsport"
   sportType       String? // Ride, GravelRide, MountainBikeRide, VirtualRide, EBikeRide...
   maxSpeedKmh     Float?
   stravaId        String?        @unique
+  igpsportId      String?        @unique // rideId en iGPSPORT: evita volver a descargar la salida
   summaryPolyline String? // Polilínea codificada (formato Google/Strava) para mapas y miniaturas
   createdAt       DateTime       @default(now())
   track           ActivityTrack?

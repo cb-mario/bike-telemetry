@@ -39,6 +39,9 @@ function mail() {
   };
 }
 
+// API (no oficial) de la web de iGPSPORT, región internacional
+const igpsportApiUrl = () => withoutTrailingSlash(process.env.IGPSPORT_API_URL || 'https://prod.en.igpsport.com/service');
+
 const brouterUrl = () => withoutTrailingSlash(process.env.BROUTER_URL || 'https://brouter.de/brouter');
 
 // Comprobación al arrancar: devuelve los problemas encontrados (vacío si todo está bien)
@@ -55,4 +58,4 @@ function configProblems() {
   return problems;
 }
 
-module.exports = { frontendUrl, jwtSecret, strava, google, mail, appTimeZone, brouterUrl, configProblems };
+module.exports = { frontendUrl, jwtSecret, strava, google, mail, appTimeZone, brouterUrl, igpsportApiUrl, configProblems };

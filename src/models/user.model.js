@@ -106,7 +106,22 @@ function createFromGoogle(data) {
   return prisma.user.create({ data, select: { id: true } });
 }
 
+// --- iGPSPORT ---
+
+const igpsportFields = {
+  id: true, igpsportAccount: true, igpsportAccessToken: true, igpsportTokenExpiresAt: true, igpsportLastSyncAt: true,
+};
+
+function findIgpsportById(id) {
+  return prisma.user.findUnique({ where: { id }, select: igpsportFields });
+}
+
+function updateIgpsport(id, data) {
+  return prisma.user.update({ where: { id }, data, select: igpsportFields });
+}
+
 module.exports = {
+  findIgpsportById, updateIgpsport,
   findByEmail, findPublicById, replaceAvatar, deleteAvatar, findAvatar, findCredentialsById, updatePassword, create, updateProfile, findStravaById, findByStravaAthleteId, updateStrava,
   findLoginMethods, canLoginWithoutStrava, createFromStrava, findByGoogleId, setGoogleId, createFromGoogle,
 };

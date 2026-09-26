@@ -64,10 +64,9 @@ async function create(userId, data) {
   return toPublic(await Activity.create(userId, data));
 }
 
-// Crea la actividad (y su track, si hay GPS) a partir de un .gpx o un .fit.
-// `title` opcional: si no, el del archivo o la fecha. Con `skipDuplicates`, 409 si ya existe
-// una salida que empezó a la misma hora (para poder cargar varias veces la misma carpeta).
-async function importFile(userId, buffer, { format = 'gpx', title, skipDuplicates = false } = {}) {
+// Analiza un .gpx o un .fit y devuelve los datos validados de la actividad, su track y su polilínea.
+// `title` opcional: si no, el del archivo o la fecha
+async function analyzeFile(buffer, { format, title }) {
   const analysis = format === 'fit' ? await analyzeFit(buffer) : analyzeGpx(buffer);
   const { name, stats, track, summaryPolyline, sportType } = analysis;
   const finalTitle = title?.trim() || name?.trim() || `Salida del ${stats.startTime.toISOString().slice(0, 10)}`;
@@ -92,10 +91,35 @@ async function importFile(userId, buffer, { format = 'gpx', title, skipDuplicate
   }
 
   assertHeartRateCoherent(data);
+  return { data: { ...data, summaryPolyline }, track };
+}
+
+// Crea la actividad (y su track, si hay GPS) a partir de un .gpx o un .fit. Con `skipDuplicates`,
+// 409 si ya existe una salida que empezó a la misma hora (para poder cargar varias veces la misma carpeta)
+async function importFile(userId, buffer, { format = 'gpx', title, skipDuplicates = false } = {}) {
+  const { data, track } = await analyzeFile(buffer, { format, title });
   const existing = skipDuplicates && await Activity.findStartingNear(userId, data.date, DUPLICATE_MARGIN_MS);
   if (existing) throw new HttpError(409, `Esta salida ya está guardada («${existing.title}»)`);
 
-  return toPublic(await Activity.createWithTrack(userId, { ...data, summaryPolyline }, track, format));
+  return toPublic(await Activity.createWithTrack(userId, data, track, format));
+}
+
+// Salida descargada de iGPSPORT: se crea o, si ya estaba (llegó por Strava, por un FIT...),
+// se vincula a su rideId para no volver a descargarla. Devuelve 'imported' o 'linked'
+async function importIgpsportRide(userId, buffer, { igpsportId, title }) {
+  const { data, track } = await analyzeFile(buffer, { format: 'fit', title });
+  const existing = await Activity.findStartingNear(userId, data.date, DUPLICATE_MARGIN_MS);
+  if (existing) {
+    await Activity.linkIgpsport(existing.id, igpsportId);
+    return 'linked';
+  }
+  try {
+    await Activity.createWithTrack(userId, { ...data, igpsportId }, track, 'igpsport');
+  } catch (err) {
+    if (err.code === 'P2002') return 'linked'; // ya importada por una sincronización simultánea
+    throw err;
+  }
+  return 'imported';
 }
 
 async function update(id, userId, changes) {
@@ -137,4 +161,4 @@ async function remove(id, userId) {
   await Activity.remove(id);
 }
 
-module.exports = { list, routes, getById, create, importFile, update, remove, getTrack };
+module.exports = { list, routes, getById, create, importFile, importIgpsportRide, update, remove, getTrack };

@@ -62,6 +62,17 @@ function createWithTrack(userId, data, track, source = 'gpx') {
   });
 }
 
+// rideIds de iGPSPORT ya importados o vinculados de entre los indicados
+async function findExistingIgpsportIds(igpsportIds) {
+  const rows = await prisma.activity.findMany({ where: { igpsportId: { in: igpsportIds } }, select: { igpsportId: true } });
+  return new Set(rows.map((r) => r.igpsportId));
+}
+
+// Marca una salida ya guardada (de Strava, de un FIT...) como la misma que la de iGPSPORT
+function linkIgpsport(id, igpsportId) {
+  return prisma.activity.updateMany({ where: { id, igpsportId: null }, data: { igpsportId } });
+}
+
 // Salida del usuario que empezó a la misma hora (± margen): la misma grabada otra vez o ya importada
 function findStartingNear(userId, date, marginMs) {
   return prisma.activity.findFirst({
@@ -118,5 +129,5 @@ async function maxRecordedHr(userId) {
 
 module.exports = {
   findForStats, maxRecordedHr, findManyByUser, countByUser, findRoutes, findByIdForUser,
-  create, createWithTrack, findStartingNear, findTrack, createTrack, findExistingStravaIds, oldestStravaDate, update, remove,
+  create, createWithTrack, findStartingNear, findExistingIgpsportIds, linkIgpsport, findTrack, createTrack, findExistingStravaIds, oldestStravaDate, update, remove,
 };

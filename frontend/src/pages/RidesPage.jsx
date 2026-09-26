@@ -14,6 +14,7 @@ import { RideCard } from '../components/RideCard'
 import { RouteFilters } from '../components/RouteFilters'
 import { EMPTY_FILTERS, filtersToQuery, hasActiveFilters } from '../lib/routeFilters'
 import { StravaControls } from '../components/StravaControls'
+import { IgpsportSyncButton } from '../components/IgpsportConnect'
 import { Icon } from '../components/ui/Icon'
 
 export function RidesPage() {
@@ -59,6 +60,7 @@ export function RidesPage() {
               <Icon name="upload" className="size-4" />
               Subir GPX
             </Button>
+            <IgpsportSyncButton />
             <StravaControls />
           </>
         }
