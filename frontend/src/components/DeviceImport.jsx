@@ -26,7 +26,7 @@ export function DeviceImport({ initialFiles, onInitialFilesUsed, onImported, onC
   async function start(rawFiles) {
     const files = pickActivityFiles(rawFiles)
     if (!files.length) {
-      return setError('No hay archivos .fit ni .gpx. En un Garmin están en la carpeta Garmin/Activity.')
+      return setError('No hay archivos .fit ni .gpx. Están en la carpeta iGPSPORT/Activities o Garmin/Activity del aparato.')
     }
     setError('')
     setRun({ total: files.length, results: [] })
@@ -107,9 +107,10 @@ export function DeviceImport({ initialFiles, onInitialFilesUsed, onImported, onC
 
       <dl className="grid gap-px overflow-hidden rounded-xl border border-zinc-800 bg-zinc-800 text-sm sm:grid-cols-2">
         <div className="bg-zinc-900 p-4">
-          <dt className="font-medium text-zinc-100">Garmin, Bryton y otros con USB</dt>
+          <dt className="font-medium text-zinc-100">iGPSPORT, Garmin, Bryton y otros con USB</dt>
           <dd className="mt-1 text-zinc-400">
-            Conéctalo al ordenador y elige su carpeta <span className="text-zinc-200">Garmin/Activity</span> (o la unidad entera).
+            Conéctalo al ordenador (en iGPSPORT, pulsa el botón izquierdo para el modo conexión) y elige su carpeta{' '}
+            <span className="text-zinc-200">iGPSPORT/Activities</span> o <span className="text-zinc-200">Garmin/Activity</span>, o la unidad entera.
           </dd>
         </div>
         <div className="bg-zinc-900 p-4">
