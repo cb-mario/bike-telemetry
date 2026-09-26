@@ -40,7 +40,8 @@ export default function App() {
       </div>
     )
   }
-  // Sin sesión: landing pública en /inicio, alta en /registro y login en cualquier otra dirección
+  // Sin sesión: landing pública en / (y /inicio), acceso en /entrar y alta en /registro.
+  // Cualquier otra dirección de la app lleva al acceso
   if (!user) {
     return (
       <BrowserRouter>
@@ -48,12 +49,14 @@ export default function App() {
         <TooltipProvider delay={250}>
           <Suspense fallback={<PageFallback />}>
             <Routes>
+              <Route index element={<LandingPage />} />
               <Route path="inicio" element={<LandingPage />} />
+              <Route path="entrar" element={<AuthPage />} />
               <Route path="registro" element={<AuthPage initialMode="register" />} />
               <Route path="entrar/:provider" element={<ProviderLoginPage />} />
               <Route path="recuperar" element={<ForgotPasswordPage />} />
               <Route path="restablecer" element={<ResetPasswordPage />} />
-              <Route path="*" element={<AuthPage />} />
+              <Route path="*" element={<Navigate to="/entrar" replace />} />
             </Routes>
           </Suspense>
         </TooltipProvider>
@@ -70,6 +73,7 @@ export default function App() {
           <Routes>
             {/* La landing sigue accesible con sesión, con su llamada a la acción apuntando al Resumen */}
             <Route path="inicio" element={<LandingPage />} />
+            <Route path="entrar" element={<Navigate to="/" replace />} />
             <Route path="registro" element={<Navigate to="/" replace />} />
             <Route element={<AppShell />}>
               <Route index element={<SummaryPage />} />

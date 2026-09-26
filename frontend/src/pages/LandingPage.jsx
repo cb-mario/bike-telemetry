@@ -61,7 +61,7 @@ function LandingNav({ signedIn }) {
             <Button as={Link} to="/" size="sm" className="sm:h-9 sm:px-4 sm:text-sm">Ir a tu resumen</Button>
           ) : (
             <>
-              <Button as={Link} to="/" variant="ghost" size="sm" className="sm:h-9 sm:px-4 sm:text-sm">Entrar</Button>
+              <Button as={Link} to="/entrar" variant="ghost" size="sm" className="sm:h-9 sm:px-4 sm:text-sm">Entrar</Button>
               <Button as={Link} to="/registro" size="sm" className="sm:h-9 sm:px-4 sm:text-sm">Crear cuenta</Button>
             </>
           )}
@@ -90,7 +90,7 @@ function Hero({ signedIn }) {
                 Crear cuenta
                 <Icon name="chevronRight" className="size-4" />
               </Button>
-              <Button as={Link} to="/" variant="secondary" className="h-11 px-6 text-base">Ya tengo cuenta</Button>
+              <Button as={Link} to="/entrar" variant="secondary" className="h-11 px-6 text-base">Ya tengo cuenta</Button>
             </>
           )}
         </div>
@@ -396,7 +396,7 @@ function FinalCta({ signedIn }) {
               ) : (
                 <>
                   <Button as={Link} to="/registro" className="h-11 px-6 text-base">Crear cuenta</Button>
-                  <Button as={Link} to="/" variant="ghost" className="h-11 px-6 text-base">Ya tengo cuenta</Button>
+                  <Button as={Link} to="/entrar" variant="ghost" className="h-11 px-6 text-base">Ya tengo cuenta</Button>
                 </>
               )}
             </div>
@@ -418,7 +418,7 @@ function LandingFooter() {
         <nav aria-label="Pie de página" className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-zinc-400">
           <a href="#funciones" className="transition-colors hover:text-zinc-100">Funciones</a>
           <a href="#como-funciona" className="transition-colors hover:text-zinc-100">Cómo funciona</a>
-          <Link to="/" className="transition-colors hover:text-zinc-100">Entrar</Link>
+          <Link to="/entrar" className="transition-colors hover:text-zinc-100">Entrar</Link>
           <Link to="/registro" className="transition-colors hover:text-zinc-100">Crear cuenta</Link>
         </nav>
       </div>

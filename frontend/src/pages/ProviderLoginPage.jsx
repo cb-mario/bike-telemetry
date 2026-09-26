@@ -37,7 +37,7 @@ export function ProviderLoginPage() {
       {error ? (
         <div className="flex w-full max-w-sm flex-col items-center gap-4">
           <FormError>{error}</FormError>
-          <Link to="/" className="text-sm text-zinc-300 underline decoration-zinc-700 underline-offset-4 hover:text-zinc-100">
+          <Link to="/entrar" className="text-sm text-zinc-300 underline decoration-zinc-700 underline-offset-4 hover:text-zinc-100">
             Volver a iniciar sesión
           </Link>
         </div>

@@ -18,7 +18,7 @@ function RecoveryLayout({ children }) {
       <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900 p-6 animate-rise-in sm:p-8">
         {children}
       </div>
-      <Link to="/" className="mt-6 flex items-center gap-1.5 text-sm text-zinc-400 underline decoration-zinc-700 underline-offset-4 transition-colors hover:text-zinc-100">
+      <Link to="/entrar" className="mt-6 flex items-center gap-1.5 text-sm text-zinc-400 underline decoration-zinc-700 underline-offset-4 transition-colors hover:text-zinc-100">
         <Icon name="arrowLeft" className="size-4" /> Volver a iniciar sesión
       </Link>
     </main>

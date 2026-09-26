@@ -97,7 +97,7 @@ describe('Iniciar sesión con Google', () => {
     await registerUser('lucia@gmail.com');
     mockGoogle(tokenOk());
     const res = await callback(loginQuery());
-    assert.equal(res.headers.location, `${FRONT}/?google_login=exists`);
+    assert.equal(res.headers.location, `${FRONT}/entrar?google_login=exists`);
     const user = await prisma.user.findUnique({ where: { email: 'lucia@gmail.com' } });
     assert.equal(user.googleId, null);
   });
@@ -105,19 +105,19 @@ describe('Iniciar sesión con Google', () => {
   it('rechaza ID tokens de otra app, de otro emisor, caducados o sin email verificado', async () => {
     for (const claims of [{ aud: 'otra-app' }, { iss: 'https://evil.example' }, { exp: nowSec() - 60 }]) {
       mockGoogle(tokenOk(claims));
-      assert.equal((await callback(loginQuery())).headers.location, `${FRONT}/?google_login=error`);
+      assert.equal((await callback(loginQuery())).headers.location, `${FRONT}/entrar?google_login=error`);
     }
     mockGoogle(tokenOk({ email_verified: false }));
-    assert.equal((await callback(loginQuery())).headers.location, `${FRONT}/?google_login=unverified`);
+    assert.equal((await callback(loginQuery())).headers.location, `${FRONT}/entrar?google_login=unverified`);
     assert.equal(await prisma.user.count(), 0);
   });
 
   it('cancelar, state inválido o fallo de Google vuelven al login con el motivo', async () => {
-    assert.equal((await callback({ error: 'access_denied', state: loginState() })).headers.location, `${FRONT}/?google_login=denied`);
-    assert.equal((await callback({ code: 'abc', state: 'basura' })).headers.location, `${FRONT}/?google_login=error`);
-    assert.equal((await callback({ code: 'abc', state: state({ purpose: 'strava-login' }) })).headers.location, `${FRONT}/?google_login=error`);
+    assert.equal((await callback({ error: 'access_denied', state: loginState() })).headers.location, `${FRONT}/entrar?google_login=denied`);
+    assert.equal((await callback({ code: 'abc', state: 'basura' })).headers.location, `${FRONT}/entrar?google_login=error`);
+    assert.equal((await callback({ code: 'abc', state: state({ purpose: 'strava-login' }) })).headers.location, `${FRONT}/entrar?google_login=error`);
     mockGoogle(() => [400, { error: 'invalid_grant' }]);
-    assert.equal((await callback(loginQuery())).headers.location, `${FRONT}/?google_login=error`);
+    assert.equal((await callback(loginQuery())).headers.location, `${FRONT}/entrar?google_login=error`);
   });
 
   describe('vincular desde el perfil', () => {

@@ -140,7 +140,7 @@ function profileFromAthlete(athlete = {}) {
 // "Continuar con Strava": entra con la cuenta vinculada a ese atleta o crea una nueva
 async function handleLoginCallback({ code, scope, error }) {
   const front = config.frontendUrl();
-  const fail = (status) => `${front}/?strava_login=${status}`;
+  const fail = (status) => `${front}/entrar?strava_login=${status}`;
   if (error) return fail('denied');
   if (!code) return fail('error');
   if (!hasActivityScope(scope)) return fail('scope');

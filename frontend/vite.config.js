@@ -9,7 +9,7 @@ const SITE_URL = (process.env.VITE_SITE_URL
   || '').replace(/\/$/, '')
 
 // Páginas públicas que se ofrecen a los buscadores (el resto de la app exige sesión)
-const PUBLIC_PAGES = ['/inicio', '/', '/registro']
+const PUBLIC_PAGES = ['/', '/entrar', '/registro']
 
 // SEO al compilar: URL absolutas de la vista previa (og:url, og:image) y robots.txt + sitemap.xml
 function seo() {
@@ -25,7 +25,7 @@ function seo() {
       const meta = (property, content) => ({ tag: 'meta', attrs: { property, content }, injectTo: 'head' })
       return [
         ...tags,
-        meta('og:url', `${SITE_URL}/inicio`),
+        meta('og:url', `${SITE_URL}/`),
         meta('og:image', `${SITE_URL}/og-image.png`),
         meta('og:image:width', '1200'),
         meta('og:image:height', '630'),

@@ -87,7 +87,7 @@ async function handleCallback({ code, state, error }) {
   const linking = payload?.purpose === LINK_PURPOSE;
   const back = linking
     ? (status) => `${frontendUrl}/perfil?google=${status}`
-    : (status) => `${frontendUrl}/?google_login=${status}`;
+    : (status) => `${frontendUrl}/entrar?google_login=${status}`;
 
   if (error) return back('denied');
   if (!code || !payload) return back('error');

@@ -79,14 +79,14 @@ describe('Iniciar sesión con Strava', () => {
 
   it('cancelar, no dar permiso de actividades o un fallo de Strava vuelven al login con el motivo', async () => {
     let res = await callback({ error: 'access_denied', state: loginState() });
-    assert.equal(res.headers.location, `${FRONT}/?strava_login=denied`);
+    assert.equal(res.headers.location, `${FRONT}/entrar?strava_login=denied`);
 
     res = await callback({ ...okQuery(), scope: 'read' });
-    assert.equal(res.headers.location, `${FRONT}/?strava_login=scope`);
+    assert.equal(res.headers.location, `${FRONT}/entrar?strava_login=scope`);
 
     mockStrava({ 'POST /oauth/token': () => [400, { message: 'Bad Request' }] });
     res = await callback(okQuery());
-    assert.equal(res.headers.location, `${FRONT}/?strava_login=error`);
+    assert.equal(res.headers.location, `${FRONT}/entrar?strava_login=error`);
     assert.equal(await prisma.user.count(), 0);
   });
 

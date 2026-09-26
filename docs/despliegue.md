@@ -65,14 +65,14 @@ Las teselas por defecto son de Stadia Maps, que sin clave solo funcionan en `loc
 
 ## 4. Que aparezca en Google
 
-El build ya genera lo necesario a partir del dominio de producción de Vercel: título y descripción, vista previa al compartir (`og-image.png`), `robots.txt` y `sitemap.xml` con las páginas públicas (`/inicio`, `/`, `/registro`). Si usas un dominio propio, define `VITE_SITE_URL=https://tudominio.com`.
+El build ya genera lo necesario a partir del dominio de producción de Vercel: título y descripción, vista previa al compartir (`og-image.png`), `robots.txt` y `sitemap.xml` con las páginas públicas (`/`, `/entrar`, `/registro`). Si usas un dominio propio, define `VITE_SITE_URL=https://tudominio.com`.
 
 1. Entra en [Google Search Console](https://search.google.com/search-console) → **Añadir propiedad → Prefijo de la URL** → `https://TU-PROYECTO.vercel.app`.
 2. Método **Etiqueta HTML**: copia solo el valor de `content="…"` en la variable `VITE_GOOGLE_SITE_VERIFICATION` de Vercel, vuelve a desplegar y pulsa **Verificar**.
 3. **Sitemaps** → envía `sitemap.xml`.
-4. **Inspección de URLs** → `https://TU-PROYECTO.vercel.app/inicio` → **Solicitar indexación**.
+4. **Inspección de URLs** → `https://TU-PROYECTO.vercel.app/` → **Solicitar indexación**.
 
-Google tarda entre unos días y un par de semanas en mostrarla. Para el portfolio enlaza a `/inicio`, que es la landing.
+Google tarda entre unos días y un par de semanas en mostrarla. Para el portfolio enlaza a la raíz (`/`): sin sesión muestra la landing.
 
 ## Límites del plan gratuito
 
