@@ -3,8 +3,9 @@ import { useSearchParams } from 'react-router'
 import { useApp } from '../context/AppContext'
 import { getGoogleStatus, GOOGLE_LINK_RESULT, linkGoogle, unlinkGoogle } from '../lib/google'
 import { Button } from './ui/Button'
+import { SettingRow } from './profile/SettingRow'
 
-// Vincular o desvincular Google como forma de entrar (tarjeta del perfil)
+// Vincular o desvincular Google como forma de entrar (fila de «Cuenta y acceso» del perfil)
 export function GoogleAccess() {
   const { toast } = useApp()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -50,20 +51,16 @@ export function GoogleAccess() {
   }
 
   if (!status) return null
-  if (!status.linked) {
-    return <Button variant="secondary" onClick={handleLink} loading={busy}>Vincular cuenta de Google</Button>
-  }
+  const action = !status.linked
+    ? <Button variant="secondary" size="sm" onClick={handleLink} loading={busy}>Vincular</Button>
+    : status.canUnlink && <Button variant="ghost" size="sm" onClick={handleUnlink} loading={busy}>Desvincular</Button>
   return (
-    <div className="flex flex-col items-start gap-1">
-      <p className="text-sm text-zinc-200">Puedes entrar con tu cuenta de Google.</p>
-      {status.canUnlink ? (
-        <button type="button" onClick={handleUnlink} disabled={busy}
-          className="text-[11px] text-zinc-500 underline decoration-zinc-700 underline-offset-2 hover:text-zinc-300 disabled:opacity-50">
-          Desvincular
-        </button>
-      ) : (
-        <p className="text-[11px] text-zinc-500">Es tu forma de entrar, así que no se puede desvincular.</p>
-      )}
-    </div>
+    <SettingRow
+      title="Google"
+      status={!status.linked
+        ? 'Sin vincular. Vincúlala para entrar sin contraseña.'
+        : status.canUnlink ? 'Vinculada: puedes entrar con tu cuenta de Google.' : 'Vinculada. Es tu forma de entrar, así que no se puede quitar.'}
+      action={action}
+    />
   )
 }

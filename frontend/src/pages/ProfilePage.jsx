@@ -13,9 +13,9 @@ import { Label } from '../components/ui/Text'
 import { StravaControls } from '../components/StravaControls'
 import { useProviders } from '../lib/providers'
 import { GoogleAccess } from '../components/GoogleAccess'
-import { ChangePasswordCard } from '../components/ChangePasswordCard'
+import { PasswordSetting } from '../components/profile/PasswordSetting'
+import { SettingRow } from '../components/profile/SettingRow'
 import { InfoTip } from '../components/InfoTip'
-import { PageHeader } from '../components/PageHeader'
 
 // Zonas por % de la FC máxima (mismo modelo que la tarjeta de zonas)
 const ZONES = [
@@ -111,32 +111,23 @@ export function ProfilePage() {
 
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-10 sm:px-6">
-      <PageHeader title="Perfil" description="Tus datos, tus zonas de pulso y tus conexiones"
-        action={<Button variant="secondary" onClick={logout}>Cerrar sesión</Button>} />
+      {/* Identidad: la foto se cambia pulsándola */}
+      <AvatarPicker>
+        <h1 className="truncate text-3xl font-semibold tracking-tight text-zinc-50">{displayName(user)}</h1>
+        <p className="mt-1 truncate text-sm text-zinc-400">
+          {user.email ?? 'Entras con Strava'} · en BikeTelemetry desde {formatDate(user.createdAt)}
+        </p>
+        {!user.name && <p className="mt-1 text-sm text-zinc-300">Añade tu nombre en tus datos físicos para que aparezca aquí.</p>}
+      </AvatarPicker>
 
-      {/* Identidad */}
-      <Card className="relative overflow-hidden p-5 sm:p-6">
-        <div className="relative">
-          <AvatarPicker>
-            <h2 className="truncate text-2xl font-semibold tracking-tight text-zinc-50">{displayName(user)}</h2>
-            <p className="mt-0.5 truncate text-sm text-zinc-400">{user.email ?? 'Entras con Strava'} · desde {formatDate(user.createdAt)}</p>
-          </AvatarPicker>
-        </div>
-        {!user.name && (
-          <p className="relative mt-5 rounded-lg border border-zinc-700 bg-zinc-950/40 px-4 py-3 text-sm text-zinc-300">
-            Añade tu nombre para que aparezca en lugar del email.
-          </p>
-        )}
-      </Card>
-
-      <div className="grid items-start gap-6 lg:grid-cols-3">
-        {/* Datos editables */}
-        <Card className="lg:col-span-2">
-          <CardHeader title="Tus datos" description="Personalizan las zonas de pulso y las estimaciones" />
-          <form onSubmit={save} noValidate className="flex flex-col gap-6 p-5">
+      {/* Rendimiento: lo que escribes a la izquierda es lo que se calcula a la derecha */}
+      <div className="grid gap-6 lg:grid-cols-5">
+        <Card className="flex flex-col lg:col-span-3">
+          <CardHeader title="Datos físicos" description="Personalizan tus zonas de pulso y las estimaciones" />
+          <form onSubmit={save} noValidate className="flex flex-1 flex-col gap-6 p-5">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Nombre" className="sm:col-span-2">{(id) => <Input id={id} maxLength={60} {...bind('name')} />}</Field>
-              <Field label="Fecha de nacimiento" hint={e.age != null ? `${e.age} años` : undefined}>
+              <Field label="Fecha de nacimiento">
                 {(id) => <Input id={id} type="date" max={todayInput()} {...bind('birthDate')} />}
               </Field>
               <div className="flex flex-col gap-1.5">
@@ -152,37 +143,40 @@ export function ProfilePage() {
               <Field label="FC máxima">{(id) => <Input id={id} type="number" inputMode="numeric" placeholder={e.maxHr ? `≈ ${e.maxHr}` : ''} {...bind('maxHr')} />}</Field>
             </div>
             <FormError>{error}</FormError>
-            <div className="flex items-center justify-end gap-2">
+            <div className="mt-auto flex items-center justify-end gap-2">
               {dirty && <Button variant="ghost" onClick={() => setForm(toForm(user))} disabled={saving}>Descartar</Button>}
               <Button type="submit" loading={saving} disabled={!dirty}>Guardar cambios</Button>
             </div>
           </form>
         </Card>
 
-        {/* Estimaciones */}
-        <div className="flex flex-col gap-6">
-          <Card className="p-5">
-            <h2 className="text-sm font-medium text-zinc-100">Estimaciones</h2>
-            {/* Solo las estimaciones que se pueden calcular; lo que falta se explica en una línea, sin guiones */}
+        <Card className="lg:col-span-2">
+          <CardHeader title="Estimaciones" description="Calculadas con tus datos físicos" />
+          <div className="p-5">
+            {/* Solo las estimaciones que se pueden calcular; lo que falta se explica en una línea */}
             {estimates.length ? (
-              <div className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-zinc-800 bg-zinc-800">
+              // Tres lecturas en una fila; con dos o cuatro, rejilla de dos (una sola estira la fila)
+              <div className={`grid gap-px overflow-hidden rounded-lg border border-zinc-800 bg-zinc-800 ${estimates.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
                 {estimates.map((t, i) => (
-                  <EstimateTile key={t.id} {...t} className={i === estimates.length - 1 && estimates.length % 2 ? 'col-span-2' : ''} />
+                  <EstimateTile key={t.id} {...t} className={estimates.length === 1 && i === 0 ? 'col-span-2' : ''} />
                 ))}
               </div>
             ) : (
-              <p className="mt-2 text-sm text-zinc-400">
+              <p className="text-sm text-zinc-400">
                 Rellena tu fecha de nacimiento, altura, peso y FC en reposo y aquí verás tu edad, IMC, FC máxima estimada y reserva de pulso.
               </p>
             )}
             {estimates.length > 0 && missing.length > 0 && (
               <p className="mt-3 text-xs text-zinc-500">Para ver {missing.join(', ')}, completa tus datos.</p>
             )}
-          </Card>
+          </div>
 
           {effectiveMax && (
-            <Card className="p-5">
-              <h2 className="text-sm font-medium text-zinc-100">Tus zonas de pulso</h2>
+            <div className="border-t border-zinc-800 p-5">
+              <div className="flex items-baseline justify-between gap-3">
+                <h2 className="text-sm font-medium text-zinc-100">Zonas de pulso</h2>
+                <span className="text-xs text-zinc-500">sobre {effectiveMax} bpm</span>
+              </div>
               <ul className="mt-4 flex flex-col gap-2.5">
                 {ZONES.map((z, i) => {
                   const lo = Math.round(z.from * effectiveMax)
@@ -198,28 +192,24 @@ export function ProfilePage() {
                   )
                 })}
               </ul>
-            </Card>
+            </div>
           )}
-
-          <ChangePasswordCard />
-
-          {providers?.strava && (
-            <Card className="p-5">
-              <h2 className="text-sm font-medium text-zinc-100">Strava</h2>
-              <p className="mt-1 mb-4 text-xs text-zinc-500">Sincroniza tus salidas automáticamente.</p>
-              <div className="flex justify-start [&>div]:items-start"><StravaControls /></div>
-            </Card>
-          )}
-
-          {providers?.google && (
-            <Card className="p-5">
-              <h2 className="text-sm font-medium text-zinc-100">Google</h2>
-              <p className="mt-1 mb-4 text-xs text-zinc-500">Entra con tu cuenta de Google sin contraseña.</p>
-              <GoogleAccess />
-            </Card>
-          )}
-        </div>
+        </Card>
       </div>
+
+      {/* Cuenta: ajustes en filas, cada uno con su estado y su acción */}
+      <Card>
+        <CardHeader title="Cuenta y acceso" description="Cómo entras en BikeTelemetry" />
+        <div className="mt-2 divide-y divide-zinc-800 border-t border-zinc-800">
+          <PasswordSetting />
+          {providers?.google && <GoogleAccess />}
+          {providers?.strava && (
+            <SettingRow title="Strava" status="Sincroniza tus salidas automáticamente." action={<StravaControls />} />
+          )}
+          <SettingRow title="Sesión" status="Cierra la sesión en este navegador."
+            action={<Button variant="secondary" size="sm" onClick={logout}>Cerrar sesión</Button>} />
+        </div>
+      </Card>
     </main>
   )
 }
