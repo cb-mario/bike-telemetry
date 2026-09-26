@@ -9,6 +9,7 @@ const activityRoutes = require('./routes/activity.routes');
 const statsRoutes = require('./routes/stats.routes');
 const stravaRoutes = require('./routes/strava.routes');
 const plannedRouteRoutes = require('./routes/plannedRoute.routes');
+const avatarRoutes = require('./routes/avatar.routes');
 const { notFound, errorHandler } = require('./middlewares/errorHandler');
 const timeZone = require('./middlewares/timeZone');
 
@@ -34,6 +35,7 @@ app.use('/api/activities', activityRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/strava', stravaRoutes);
 app.use('/api/planned-routes', plannedRouteRoutes);
+app.use('/api/avatars', avatarRoutes);
 
 // 404 y errores (siempre al final)
 app.use(notFound);

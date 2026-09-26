@@ -49,6 +49,14 @@ function authLimiters({ skip } = {}) {
       skip,
       message: 'Demasiadas solicitudes de recuperación. Inténtalo más tarde',
     }),
+    // Con una sesión robada, que no sirva para adivinar la contraseña actual
+    changePassword: limiter({
+      windowMs: 15 * MINUTE,
+      limit: 10,
+      skipSuccessfulRequests: true,
+      skip,
+      message: 'Demasiados intentos. Espera unos minutos y vuelve a probar',
+    }),
     resetPassword: limiter({
       windowMs: 15 * MINUTE,
       limit: 10,

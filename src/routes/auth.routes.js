@@ -1,6 +1,8 @@
 const { Router } = require('express');
 
 const authController = require('../controllers/auth.controller');
+const avatarController = require('../controllers/avatar.controller');
+const uploadAvatar = require('../middlewares/uploadAvatar');
 const authMiddleware = require('../middlewares/authMiddleware');
 const { authLimiters } = require('../middlewares/rateLimit');
 
@@ -25,5 +27,8 @@ router.get('/google/status', authMiddleware, authController.googleStatus);
 router.delete('/google', authMiddleware, authController.googleUnlink);
 router.get('/me', authMiddleware, authController.me);
 router.patch('/me', authMiddleware, authController.updateMe);
+router.put('/me/avatar', authMiddleware, uploadAvatar, avatarController.upload);
+router.delete('/me/avatar', authMiddleware, avatarController.remove);
+router.put('/me/password', authMiddleware, limit.changePassword, authController.changePassword);
 
 module.exports = router;

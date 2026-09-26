@@ -76,6 +76,13 @@ async function resetPassword(req, res) {
   res.json(await authService.resetPassword(token, password));
 }
 
+async function changePassword(req, res) {
+  const { currentPassword, newPassword } = req.body || {};
+  if (typeof newPassword !== 'string') throw new HttpError(400, 'La contraseña nueva es obligatoria');
+  assertPasswordStrength(newPassword);
+  res.json({ user: await authService.changePassword(req.user.id, currentPassword, newPassword) });
+}
+
 async function me(req, res) {
   res.json({ user: await profileService.getProfile(req.user.id) });
 }
@@ -130,6 +137,6 @@ async function googleUnlink(req, res) {
 }
 
 module.exports = {
-  register, login, forgotPassword, resetPassword, me, updateMe, providers, stravaLoginUrl, exchange,
+  register, login, forgotPassword, resetPassword, changePassword, me, updateMe, providers, stravaLoginUrl, exchange,
   googleLoginUrl, googleLinkUrl, googleCallback, googleStatus, googleUnlink,
 };

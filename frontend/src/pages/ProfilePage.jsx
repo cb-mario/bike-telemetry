@@ -4,7 +4,7 @@ import { useApp } from '../context/AppContext'
 import { api } from '../lib/api'
 import { formatDate, formatNumber, todayInput } from '../lib/format'
 import { SEX_OPTIONS, bmiCategory, displayName } from '../lib/user'
-import { Avatar } from '../components/Avatar'
+import { AvatarPicker } from '../components/AvatarPicker'
 import { Button } from '../components/ui/Button'
 import { Card, CardHeader } from '../components/ui/Card'
 import { Field, FormError, Input } from '../components/ui/Field'
@@ -13,6 +13,7 @@ import { Label } from '../components/ui/Text'
 import { StravaControls } from '../components/StravaControls'
 import { useProviders } from '../lib/providers'
 import { GoogleAccess } from '../components/GoogleAccess'
+import { ChangePasswordCard } from '../components/ChangePasswordCard'
 import { InfoTip } from '../components/InfoTip'
 import { PageHeader } from '../components/PageHeader'
 
@@ -115,12 +116,11 @@ export function ProfilePage() {
 
       {/* Identidad */}
       <Card className="relative overflow-hidden p-5 sm:p-6">
-        <div className="relative flex flex-wrap items-center gap-4">
-          <Avatar user={user} size="size-14 text-xl" />
-          <div className="min-w-0 flex-1">
+        <div className="relative">
+          <AvatarPicker>
             <h2 className="truncate text-2xl font-semibold tracking-tight text-zinc-50">{displayName(user)}</h2>
-            <p className="mt-0.5 text-sm text-zinc-400">{user.email ?? 'Entras con Strava'} · desde {formatDate(user.createdAt)}</p>
-          </div>
+            <p className="mt-0.5 truncate text-sm text-zinc-400">{user.email ?? 'Entras con Strava'} · desde {formatDate(user.createdAt)}</p>
+          </AvatarPicker>
         </div>
         {!user.name && (
           <p className="relative mt-5 rounded-lg border border-zinc-700 bg-zinc-950/40 px-4 py-3 text-sm text-zinc-300">
@@ -200,6 +200,8 @@ export function ProfilePage() {
               </ul>
             </Card>
           )}
+
+          <ChangePasswordCard />
 
           {providers?.strava && (
             <Card className="p-5">

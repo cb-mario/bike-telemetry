@@ -53,4 +53,25 @@ async function updateProfile(userId, changes) {
   }
 }
 
-module.exports = { estimatesFor, toPublicUser, assertHrCoherent, getProfile, updateProfile };
+// Tipo de imagen por sus primeros bytes (no por lo que diga el cliente); null si no es una admitida
+function imageType(buffer) {
+  if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return 'image/jpeg';
+  if (buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'image/png';
+  if (buffer.length >= 12 && buffer.toString('latin1', 0, 4) === 'RIFF' && buffer.toString('latin1', 8, 12) === 'WEBP') return 'image/webp';
+  return null;
+}
+
+// Foto de perfil. El navegador ya la recorta y comprime; aquí solo se comprueba que sea una imagen
+async function setAvatar(userId, buffer) {
+  const contentType = imageType(buffer);
+  if (!contentType) throw new HttpError(400, 'La foto tiene que ser JPG, PNG o WebP');
+  await User.replaceAvatar(userId, { data: buffer, contentType });
+  return getProfile(userId);
+}
+
+async function removeAvatar(userId) {
+  await User.deleteAvatar(userId);
+  return getProfile(userId);
+}
+
+module.exports = { estimatesFor, toPublicUser, assertHrCoherent, getProfile, updateProfile, imageType, setAvatar, removeAvatar };

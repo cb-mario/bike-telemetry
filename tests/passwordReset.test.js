@@ -34,6 +34,7 @@ describe('Recuperación de contraseña', () => {
     assert.equal(testOutbox.length, 1);
     assert.equal(testOutbox[0].to, 'rider@test.local');
     assert.match(testOutbox[0].text, /http:\/\/front\.test\/restablecer#token=/);
+    assert.match(testOutbox[0].html, /href="http:\/\/front\.test\/restablecer#token=/);
   });
 
   it('email sin cuenta: misma respuesta y ningún correo', async () => {

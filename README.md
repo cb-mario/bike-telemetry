@@ -2,6 +2,8 @@
 
 Aplicación web para registrar salidas en bici, analizar el rendimiento y planificar las próximas rutas. Junta en un solo sitio **lo rodado** (Salidas) y **lo que se va a rodar** (Rutas).
 
+**Pruébala en [bike-telemetry.vercel.app](https://bike-telemetry.vercel.app)**: crea una cuenta con tu email o con Google.
+
 ![BikeTelemetry: cada kilómetro, medido](frontend/public/og-image.png)
 
 ## Funciones
@@ -11,7 +13,7 @@ Aplicación web para registrar salidas en bici, analizar el rendimiento y planif
 - **Zonas de pulso:** cinco zonas a partir de la FC máxima indicada, la mayor registrada o la estimada por edad.
 - **Detalle de salida:** mapa del recorrido y perfil de altitud enlazados (al pasar el cursor por el perfil se sitúa el punto en el mapa).
 - **Rutas:** trazado sobre el mapa ajustado a carretera, gravel o caminos, con perfil, tiempo estimado y exportación a GPX para el ciclocomputador. Cualquier salida se puede «repetir» como ruta.
-- **Cuentas:** email y contraseña (con recuperación por correo), o acceso con Strava y con Google.
+- **Cuentas:** email y contraseña (con recuperación por correo), o acceso con Strava y con Google. Desde el perfil se cambia la contraseña y se sube una foto, que el navegador recorta y comprime antes de enviarla.
 
 ## Stack
 

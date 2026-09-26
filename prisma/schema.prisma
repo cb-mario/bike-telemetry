@@ -38,6 +38,18 @@ model User {
   stravaLastSyncAt     DateTime?
   activities           Activity[]
   plannedRoutes        PlannedRoute[]
+  avatar               UserAvatar?
+}
+
+// Foto de perfil (1:1), aparte para no cargarla con el usuario. Se sirve en /api/avatars/:id:
+// el id es aleatorio y cambia en cada subida, así la URL puede cachearse para siempre
+model UserAvatar {
+  id          String   @id @default(uuid())
+  userId      Int      @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  data        Bytes
+  contentType String // "image/jpeg" | "image/png" | "image/webp"
+  createdAt   DateTime @default(now())
 }
 
 model Activity {

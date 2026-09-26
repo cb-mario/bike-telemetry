@@ -1,21 +1,28 @@
 const prisma = require('./prisma');
 
-// Campos públicos del usuario (nunca exponer passwordHash)
+// Campos públicos del usuario. passwordHash se lee solo para saber si hay contraseña:
+// toPublic lo cambia por hasPassword y el hash nunca sale del modelo
 const publicFields = {
   id: true, email: true, name: true, birthDate: true, sex: true, heightCm: true, weightKg: true,
-  restingHr: true, maxHr: true, createdAt: true,
+  restingHr: true, maxHr: true, createdAt: true, passwordHash: true, avatar: { select: { id: true } },
 };
+
+function toPublic(row) {
+  if (!row) return row;
+  const { passwordHash, avatar, ...user } = row;
+  return { ...user, hasPassword: Boolean(passwordHash), avatarUrl: avatar ? `/api/avatars/${avatar.id}` : null };
+}
 
 function findByEmail(email) {
   return prisma.user.findUnique({ where: { email } });
 }
 
-function findPublicById(id) {
-  return prisma.user.findUnique({ where: { id }, select: publicFields });
+async function findPublicById(id) {
+  return toPublic(await prisma.user.findUnique({ where: { id }, select: publicFields }));
 }
 
-function create({ email, passwordHash, ...profile }) {
-  return prisma.user.create({ data: { email, passwordHash, ...profile }, select: publicFields });
+async function create({ email, passwordHash, ...profile }) {
+  return toPublic(await prisma.user.create({ data: { email, passwordHash, ...profile }, select: publicFields }));
 }
 
 // Para la recuperación de contraseña (necesita el hash actual para la huella del enlace)
@@ -23,12 +30,30 @@ function findCredentialsById(id) {
   return prisma.user.findUnique({ where: { id }, select: { id: true, email: true, passwordHash: true } });
 }
 
-function updatePassword(id, passwordHash) {
-  return prisma.user.update({ where: { id }, data: { passwordHash }, select: publicFields });
+async function updatePassword(id, passwordHash) {
+  return toPublic(await prisma.user.update({ where: { id }, data: { passwordHash }, select: publicFields }));
 }
 
-function updateProfile(id, data) {
-  return prisma.user.update({ where: { id }, data, select: publicFields });
+async function updateProfile(id, data) {
+  return toPublic(await prisma.user.update({ where: { id }, data, select: publicFields }));
+}
+
+// --- Foto de perfil ---
+
+// Sustituye la foto (id nuevo, así la URL anterior deja de servir y la nueva no choca con la caché)
+function replaceAvatar(userId, { data, contentType }) {
+  return prisma.$transaction([
+    prisma.userAvatar.deleteMany({ where: { userId } }),
+    prisma.userAvatar.create({ data: { userId, data, contentType }, select: { id: true } }),
+  ]);
+}
+
+function deleteAvatar(userId) {
+  return prisma.userAvatar.deleteMany({ where: { userId } });
+}
+
+function findAvatar(id) {
+  return prisma.userAvatar.findUnique({ where: { id }, select: { data: true, contentType: true } });
 }
 
 // --- Strava ---
@@ -82,6 +107,6 @@ function createFromGoogle(data) {
 }
 
 module.exports = {
-  findByEmail, findPublicById, findCredentialsById, updatePassword, create, updateProfile, findStravaById, findByStravaAthleteId, updateStrava,
+  findByEmail, findPublicById, replaceAvatar, deleteAvatar, findAvatar, findCredentialsById, updatePassword, create, updateProfile, findStravaById, findByStravaAthleteId, updateStrava,
   findLoginMethods, canLoginWithoutStrava, createFromStrava, findByGoogleId, setGoogleId, createFromGoogle,
 };
