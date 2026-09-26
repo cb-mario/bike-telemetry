@@ -6,6 +6,9 @@ const { jwtSecret } = require('../config');
 const { toPublicUser, assertHrCoherent } = require('./profile.service');
 const { HttpError } = require('../errors');
 const { readLoginTicket } = require('../utils/loginTicket');
+const { issuePasswordResetToken, readPasswordResetToken, fingerprint } = require('../utils/passwordResetToken');
+const { frontendUrl } = require('../config');
+const { sendMail } = require('./mail.service');
 
 // Coste de bcrypt configurable (los tests usan uno bajo para ir rápido)
 const SALT_ROUNDS = Number(process.env.BCRYPT_ROUNDS) || 12;
@@ -70,4 +73,34 @@ async function loginWithTicket(ticket) {
   return { user: toPublicUser(user), token: signToken(user), created: data.created };
 }
 
-module.exports = { register, login, loginWithTicket, signToken, verifyToken };
+// "He olvidado mi contraseña": envía el enlace si el email tiene cuenta. Quien llama no sabe si
+// existe (misma respuesta y el envío no se espera, para que el tiempo tampoco lo delate).
+// Una cuenta creada con Google también puede usarlo para ponerse contraseña
+async function requestPasswordReset(email) {
+  const user = await User.findByEmail(email);
+  if (!user) return;
+
+  // El token va en el fragmento (#): no llega a ningún servidor ni queda en los logs
+  const link = `${frontendUrl()}/restablecer#token=${encodeURIComponent(issuePasswordResetToken(user))}`;
+  sendMail({
+    to: user.email,
+    subject: 'Restablece tu contraseña de BikeTelemetry',
+    text: `Hola${user.name ? ` ${user.name}` : ''}:\n\n`
+      + `Para elegir una contraseña nueva abre este enlace (caduca en 30 minutos y solo sirve una vez):\n\n${link}\n\n`
+      + 'Si no lo has pedido tú, ignora este correo: tu contraseña no cambia.',
+  }).catch((err) => console.error('No se pudo enviar el correo de recuperación:', err));
+}
+
+// Cambia la contraseña con el enlace del correo y abre sesión
+async function resetPassword(token, password) {
+  const data = readPasswordResetToken(token);
+  const user = data && (await User.findCredentialsById(data.userId));
+  if (!user || fingerprint(user.passwordHash) !== data.fingerprint) {
+    throw new HttpError(400, 'El enlace no es válido o ha caducado. Pide uno nuevo');
+  }
+
+  const updated = await User.updatePassword(user.id, await bcrypt.hash(password, SALT_ROUNDS));
+  return { user: toPublicUser(updated), token: signToken(updated) };
+}
+
+module.exports = { register, login, loginWithTicket, requestPasswordReset, resetPassword, signToken, verifyToken };

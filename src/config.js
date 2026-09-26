@@ -28,6 +28,17 @@ function google() {
 // Zona horaria por defecto para días, semanas y meses (el frontend envía la suya en X-Timezone)
 const appTimeZone = () => process.env.APP_TIMEZONE || 'Europe/Madrid';
 
+// Correo saliente (recuperación de contraseña). Sin SMTP_HOST los correos se escriben en la consola
+function mail() {
+  return {
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT) || 587,
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+    from: process.env.MAIL_FROM || process.env.SMTP_USER,
+  };
+}
+
 const brouterUrl = () => withoutTrailingSlash(process.env.BROUTER_URL || 'https://brouter.de/brouter');
 
 // Comprobación al arrancar: devuelve los problemas encontrados (vacío si todo está bien)
@@ -44,4 +55,4 @@ function configProblems() {
   return problems;
 }
 
-module.exports = { frontendUrl, jwtSecret, strava, google, appTimeZone, brouterUrl, configProblems };
+module.exports = { frontendUrl, jwtSecret, strava, google, mail, appTimeZone, brouterUrl, configProblems };

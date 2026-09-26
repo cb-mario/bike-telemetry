@@ -8,7 +8,9 @@ export default defineConfig({
   migrations: {
     path: "prisma/migrations",
   },
+  // Las migraciones van por la conexión directa (Supabase: DIRECT_URL, puerto 5432);
+  // la app usa DATABASE_URL, que en producción es el pooler de Supabase (puerto 6543)
   datasource: {
-    url: process.env["DATABASE_URL"],
+    url: process.env["DIRECT_URL"] || process.env["DATABASE_URL"],
   },
 });

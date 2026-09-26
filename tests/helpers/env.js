@@ -1,6 +1,10 @@
 // Se carga con --import antes de cada fichero de test: entorno aislado del de desarrollo
 process.env.NODE_ENV = 'test';
-process.env.DATABASE_URL = 'file:./test.db';
+// Base de PostgreSQL solo para los tests (se vacía entera): nunca la de desarrollo ni la de Supabase
+// (por defecto, el PostgreSQL local con el usuario del sistema, como lo deja Homebrew)
+process.env.DATABASE_URL = process.env.TEST_DATABASE_URL
+  || `postgresql://${require('node:os').userInfo().username}@localhost:5432/biketelemetry_test`;
+delete process.env.DIRECT_URL;
 process.env.JWT_SECRET = 'test-secret';
 process.env.JWT_EXPIRES_IN = '1h';
 // Los tests existentes cuentan días en UTC; los de zona horaria envían X-Timezone

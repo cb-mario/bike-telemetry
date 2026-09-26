@@ -43,9 +43,14 @@ function LoginForm() {
         <Field label="Email">
           {(id) => <Input id={id} type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tu@email.com" />}
         </Field>
-        <Field label="Contraseña">
-          {(id) => <Input id={id} type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />}
-        </Field>
+        <div className="flex flex-col gap-2">
+          <Field label="Contraseña">
+            {(id) => <Input id={id} type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />}
+          </Field>
+          <Link to="/recuperar" state={{ email }} className="self-end rounded-sm text-[13px] text-zinc-400 underline decoration-zinc-700 underline-offset-4 transition-colors hover:text-zinc-100 focus-visible:outline-2 focus-visible:outline-brand-2">
+            ¿Has olvidado la contraseña?
+          </Link>
+        </div>
       </div>
       <FormError>{error}</FormError>
       <Button type="submit" className="w-full" loading={submitting}>Entrar</Button>

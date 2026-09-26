@@ -12,7 +12,7 @@ const range = (min, max) => {
 function buildWhere({ userId, from, to, q, minKm, maxKm, minElevation, maxElevation, sportType }) {
   const where = { userId };
   if (from || to) where.date = range(from, to);
-  if (q) where.title = { contains: q };
+  if (q) where.title = { contains: q, mode: 'insensitive' }; // Postgres distingue mayúsculas por defecto
   if (minKm != null || maxKm != null) where.distanceKm = range(minKm, maxKm);
   if (minElevation != null || maxElevation != null) where.elevationGain = range(minElevation, maxElevation);
   if (sportType) where.sportType = sportType;

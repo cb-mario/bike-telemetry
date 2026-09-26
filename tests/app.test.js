@@ -1,11 +1,19 @@
-const { describe, it } = require('node:test');
+const { describe, it, after } = require('node:test');
 const assert = require('node:assert/strict');
 
-const { app, request } = require('./helpers/utils');
+const { app, prisma, request } = require('./helpers/utils');
 
 describe('App', () => {
+  after(() => prisma.$disconnect());
+
   it('GET /api/health responde ok', async () => {
     const res = await request(app).get('/api/health');
+    assert.equal(res.status, 200);
+    assert.equal(res.body.status, 'ok');
+  });
+
+  it('GET /api/health/db consulta la base de datos', async () => {
+    const res = await request(app).get('/api/health/db');
     assert.equal(res.status, 200);
     assert.equal(res.body.status, 'ok');
   });

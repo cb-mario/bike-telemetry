@@ -19,7 +19,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@prisma/adapter-better-sqlite3": "^7.10.0",
+    "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "@tmcw/togeojson": "^7.1.2",
     "@xmldom/xmldom": "^0.9.12",
@@ -30,7 +30,9 @@
     "express-rate-limit": "^8.7.0",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
-    "multer": "^2.4.0"
+    "multer": "^2.4.0",
+    "nodemailer": "^10.0.10",
+    "pg": "^8.23.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.14",

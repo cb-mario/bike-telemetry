@@ -9,6 +9,23 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 8;
 const MAX_PASSWORD_LENGTH = 72; // bcrypt ignora lo que pase de 72 bytes
 
+function parseEmail(email) {
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!EMAIL_REGEX.test(normalizedEmail) || normalizedEmail.length > 254) {
+    throw new HttpError(400, 'Email no válido');
+  }
+  return normalizedEmail;
+}
+
+function assertPasswordStrength(password) {
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    throw new HttpError(400, `La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres`);
+  }
+  if (Buffer.byteLength(password, 'utf8') > MAX_PASSWORD_LENGTH) {
+    throw new HttpError(400, `La contraseña no puede superar ${MAX_PASSWORD_LENGTH} bytes`);
+  }
+}
+
 // Valida y normaliza { email, password } del body
 function parseCredentials(body, { checkStrength }) {
   const { email, password } = body || {};
@@ -17,18 +34,10 @@ function parseCredentials(body, { checkStrength }) {
     throw new HttpError(400, 'Email y contraseña son obligatorios');
   }
 
-  const normalizedEmail = email.trim().toLowerCase();
-  if (!EMAIL_REGEX.test(normalizedEmail) || normalizedEmail.length > 254) {
-    throw new HttpError(400, 'Email no válido');
-  }
+  const normalizedEmail = parseEmail(email);
 
   if (checkStrength) {
-    if (password.length < MIN_PASSWORD_LENGTH) {
-      throw new HttpError(400, `La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres`);
-    }
-    if (Buffer.byteLength(password, 'utf8') > MAX_PASSWORD_LENGTH) {
-      throw new HttpError(400, `La contraseña no puede superar ${MAX_PASSWORD_LENGTH} bytes`);
-    }
+    assertPasswordStrength(password);
   } else if (password.length === 0) {
     throw new HttpError(400, 'Email y contraseña son obligatorios');
   }
@@ -48,6 +57,23 @@ async function login(req, res) {
   const { email, password } = parseCredentials(req.body, { checkStrength: false });
   const result = await authService.login(email, password);
   res.json(result);
+}
+
+// Siempre la misma respuesta, exista o no la cuenta
+async function forgotPassword(req, res) {
+  const { email } = req.body || {};
+  if (typeof email !== 'string') throw new HttpError(400, 'El email es obligatorio');
+  await authService.requestPasswordReset(parseEmail(email));
+  res.json({ message: 'Si el email tiene cuenta, te hemos enviado un enlace para restablecer la contraseña' });
+}
+
+async function resetPassword(req, res) {
+  const { token, password } = req.body || {};
+  if (typeof token !== 'string' || typeof password !== 'string') {
+    throw new HttpError(400, 'Faltan el enlace o la contraseña nueva');
+  }
+  assertPasswordStrength(password);
+  res.json(await authService.resetPassword(token, password));
 }
 
 async function me(req, res) {
@@ -99,6 +125,6 @@ async function googleUnlink(req, res) {
 }
 
 module.exports = {
-  register, login, me, updateMe, stravaLoginUrl, exchange,
+  register, login, forgotPassword, resetPassword, me, updateMe, stravaLoginUrl, exchange,
   googleLoginUrl, googleLinkUrl, googleCallback, googleStatus, googleUnlink,
 };

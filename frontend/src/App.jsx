@@ -17,6 +17,8 @@ const RouteEditorPage = page(() => import('./pages/RouteEditorPage'), 'RouteEdit
 const AuthPage = page(() => import('./pages/AuthPage'), 'AuthPage')
 const LandingPage = page(() => import('./pages/LandingPage'), 'LandingPage')
 const ProviderLoginPage = page(() => import('./pages/ProviderLoginPage'), 'ProviderLoginPage')
+const ForgotPasswordPage = page(() => import('./pages/PasswordRecoveryPage'), 'ForgotPasswordPage')
+const ResetPasswordPage = page(() => import('./pages/PasswordRecoveryPage'), 'ResetPasswordPage')
 const ProfilePage = page(() => import('./pages/ProfilePage'), 'ProfilePage')
 
 function PageFallback() {
@@ -49,6 +51,8 @@ export default function App() {
               <Route path="inicio" element={<LandingPage />} />
               <Route path="registro" element={<AuthPage initialMode="register" />} />
               <Route path="entrar/:provider" element={<ProviderLoginPage />} />
+              <Route path="recuperar" element={<ForgotPasswordPage />} />
+              <Route path="restablecer" element={<ResetPasswordPage />} />
               <Route path="*" element={<AuthPage />} />
             </Routes>
           </Suspense>

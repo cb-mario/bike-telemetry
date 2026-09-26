@@ -9,26 +9,27 @@ Aplicación web para registrar salidas en bici, analizar el rendimiento y planif
 - **Zonas de pulso:** cinco zonas a partir de la FC máxima indicada, la mayor registrada o la estimada por edad.
 - **Detalle de salida:** mapa del recorrido y perfil de altitud enlazados (al pasar el cursor por el perfil se sitúa el punto en el mapa).
 - **Rutas:** trazado sobre el mapa ajustado a carretera, gravel o caminos, con perfil, tiempo estimado y exportación a GPX para el ciclocomputador. Cualquier salida se puede «repetir» como ruta.
-- **Cuentas:** email y contraseña, o acceso con Strava y con Google.
+- **Cuentas:** email y contraseña (con recuperación por correo), o acceso con Strava y con Google.
 
 ## Stack
 
 | Parte | Tecnologías |
 |---|---|
-| Backend | Node.js, Express 5, Prisma + SQLite |
+| Backend | Node.js, Express 5, Prisma + PostgreSQL (Supabase en producción) |
 | Autenticación | JWT, bcrypt, OAuth 2.0 (Strava y Google); tokens de Strava cifrados con AES-256-GCM |
 | Frontend | React 19, Vite, React Router, Tailwind CSS v4, Leaflet, Base UI |
 | Tests | `node:test` |
 
 ## Puesta en marcha
 
-Requisitos: Node.js 22 o superior.
+Requisitos: Node.js 22 o superior y PostgreSQL (p. ej. `brew install postgresql@18 && brew services start postgresql@18`).
 
 ```bash
 # Backend (raíz del proyecto)
 npm install
 cp .env.example .env        # rellena JWT_SECRET y, si los usas, Strava y Google
-npx prisma migrate dev      # crea la base de datos SQLite
+createdb biketelemetry && createdb biketelemetry_test
+npx prisma migrate dev      # crea las tablas
 npm run dev                 # API en http://localhost:3000
 
 # Frontend (otra terminal)
@@ -39,12 +40,16 @@ npm run dev                 # app en http://localhost:5173 (redirige /api al bac
 
 Las integraciones son opcionales: sin credenciales de Strava o Google la app funciona con email y contraseña e importación de GPX. Las variables de entorno están descritas en `.env.example`.
 
+## Despliegue
+
+Producción en Vercel (frontend estático + API como función serverless, `api/index.js`) con la base de datos en Supabase. Los pasos están en [docs/despliegue.md](docs/despliegue.md).
+
 ## Comandos
 
 | Comando | Qué hace |
 |---|---|
 | `npm run dev` | Backend con recarga automática |
-| `npm test` | Tests del backend (usan una base de datos aparte) |
+| `npm test` | Tests del backend (usan la base `biketelemetry_test`, que vacían en cada ejecución) |
 | `npm run lint` | Linter del backend (oxlint) |
 | `npm run db:migrate` | Aplica las migraciones de Prisma |
 | `npm run db:studio` | Explorador de la base de datos |
@@ -61,6 +66,7 @@ src/                 Backend
   models/            Acceso a datos con Prisma
   middlewares/       Autenticación y gestión de errores
 prisma/              Esquema y migraciones
+api/                 Punto de entrada de la API en Vercel
 tests/               Tests de la API
 frontend/src/
   pages/             Pantallas (Resumen, Salidas, Rutas, Perfil, landing)

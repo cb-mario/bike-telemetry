@@ -42,6 +42,20 @@ function authLimiters({ skip } = {}) {
       skip,
       message: 'Demasiados intentos. Espera unos minutos y vuelve a probar',
     }),
+    // Cada petición puede mandar un correo: pocas por hora, para no usarlo contra el buzón de nadie
+    forgotPassword: limiter({
+      windowMs: 60 * MINUTE,
+      limit: 5,
+      skip,
+      message: 'Demasiadas solicitudes de recuperación. Inténtalo más tarde',
+    }),
+    resetPassword: limiter({
+      windowMs: 15 * MINUTE,
+      limit: 10,
+      skipSuccessfulRequests: true,
+      skip,
+      message: 'Demasiados intentos. Espera unos minutos y vuelve a probar',
+    }),
   };
 }
 

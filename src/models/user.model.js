@@ -18,6 +18,15 @@ function create({ email, passwordHash, ...profile }) {
   return prisma.user.create({ data: { email, passwordHash, ...profile }, select: publicFields });
 }
 
+// Para la recuperación de contraseña (necesita el hash actual para la huella del enlace)
+function findCredentialsById(id) {
+  return prisma.user.findUnique({ where: { id }, select: { id: true, email: true, passwordHash: true } });
+}
+
+function updatePassword(id, passwordHash) {
+  return prisma.user.update({ where: { id }, data: { passwordHash }, select: publicFields });
+}
+
 function updateProfile(id, data) {
   return prisma.user.update({ where: { id }, data, select: publicFields });
 }
@@ -73,6 +82,6 @@ function createFromGoogle(data) {
 }
 
 module.exports = {
-  findByEmail, findPublicById, create, updateProfile, findStravaById, findByStravaAthleteId, updateStrava,
+  findByEmail, findPublicById, findCredentialsById, updatePassword, create, updateProfile, findStravaById, findByStravaAthleteId, updateStrava,
   findLoginMethods, canLoginWithoutStrava, createFromStrava, findByGoogleId, setGoogleId, createFromGoogle,
 };

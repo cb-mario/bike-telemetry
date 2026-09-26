@@ -10,6 +10,9 @@ const limit = authLimiters({ skip: () => process.env.NODE_ENV === 'test' });
 router.post('/register', limit.register, authController.register);
 router.post('/login', limit.login, authController.login);
 router.post('/exchange', limit.exchange, authController.exchange);
+// Recuperación de contraseña por correo
+router.post('/forgot-password', limit.forgotPassword, authController.forgotPassword);
+router.post('/reset-password', limit.resetPassword, authController.resetPassword);
 
 // Strava y Google: acceso sin contraseña
 router.get('/strava/url', authController.stravaLoginUrl);
