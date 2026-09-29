@@ -1,11 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router'
+import { useMemo, useState } from 'react'
 import { useApp } from '../context/AppContext'
 import { useActivities } from '../lib/useActivities'
 import { useApiQuery } from '../lib/useApiQuery'
 import { api } from '../lib/api'
 import { formatNumber } from '../lib/format'
-import { STRAVA_RESULT } from '../lib/strava'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { FormError } from '../components/ui/Field'
@@ -13,27 +11,15 @@ import { PageHeader } from '../components/PageHeader'
 import { RideCard } from '../components/RideCard'
 import { RouteFilters } from '../components/RouteFilters'
 import { EMPTY_FILTERS, filtersToQuery, hasActiveFilters } from '../lib/routeFilters'
-import { StravaControls } from '../components/StravaControls'
+import { SyncButton } from '../components/connections/SyncButton'
 import { Icon } from '../components/ui/Icon'
 
 export function RidesPage() {
-  const { refreshKey, openNewActivity, toast } = useApp()
-  const [searchParams, setSearchParams] = useSearchParams()
+  const { refreshKey, openNewActivity } = useApp()
   const [filters, setFilters] = useState(EMPTY_FILTERS)
   const query = useMemo(() => filtersToQuery(filters), [filters])
   const { page, loading, error, loadMore } = useActivities(query, refreshKey)
   const [loadingMore, setLoadingMore] = useState(false)
-
-  // Resultado de la vuelta desde Strava (?strava=connected|denied|…), mostrado una sola vez
-  const handledResult = useRef(null)
-  useEffect(() => {
-    const result = searchParams.get('strava')
-    if (!result || handledResult.current === result) return
-    handledResult.current = result
-    const [message, tone] = STRAVA_RESULT[result] ?? STRAVA_RESULT.error
-    toast(message, tone)
-    setSearchParams({}, { replace: true })
-  }, [searchParams, setSearchParams, toast])
 
   // Límites de zonas para etiquetar la FC de cada salida
   const zones = useApiQuery(() => api('/stats/hr-zones'), [refreshKey]).data?.zones ?? null
@@ -59,7 +45,7 @@ export function RidesPage() {
               <Icon name="upload" className="size-4" />
               Subir GPX
             </Button>
-            <StravaControls />
+            <SyncButton />
           </>
         }
       />

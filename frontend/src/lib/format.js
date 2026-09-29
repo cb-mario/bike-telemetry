@@ -46,3 +46,13 @@ export function todayInput() {
   const pad = (n) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
+
+// Tiempo transcurrido en corto: «ahora mismo», «hace 5 min», «hace 3 h», «hace 2 d»
+export function timeAgo(iso) {
+  const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60000)
+  if (minutes < 1) return 'ahora mismo'
+  if (minutes < 60) return `hace ${minutes} min`
+  const hours = Math.round(minutes / 60)
+  if (hours < 24) return `hace ${hours} h`
+  return `hace ${Math.round(hours / 24)} d`
+}

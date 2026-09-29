@@ -112,7 +112,7 @@ function LastRide({ ride: r, zones, onImport }) {
       <Card className="flex w-full flex-col items-start justify-end gap-4 p-6 sm:p-8">
         <div className="max-w-sm">
           <h2 className="text-2xl font-semibold tracking-tight text-zinc-100">Aún no hay salidas</h2>
-          <p className="mt-2 text-sm text-zinc-400">Sube un GPX o sincroniza Strava y aquí verás tu última salida con su recorrido.</p>
+          <p className="mt-2 text-sm text-zinc-400">Sube un GPX o conecta tus servicios en el perfil y aquí verás tu última salida con su recorrido.</p>
         </div>
         <Button onClick={onImport}>
           <Icon name="upload" className="size-4" />

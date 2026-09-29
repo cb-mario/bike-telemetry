@@ -10,11 +10,9 @@ import { Card, CardHeader } from '../components/ui/Card'
 import { Field, FormError, Input } from '../components/ui/Field'
 import { SegmentedControl } from '../components/ui/SegmentedControl'
 import { Label } from '../components/ui/Text'
-import { StravaControls } from '../components/StravaControls'
 import { useProviders } from '../lib/providers'
-import { getStravaStatus } from '../lib/strava'
-import { useApiQuery } from '../lib/useApiQuery'
 import { GoogleAccess } from '../components/GoogleAccess'
+import { ConnectionsCard } from '../components/connections/ConnectionsCard'
 import { PasswordSetting } from '../components/profile/PasswordSetting'
 import { SettingRow } from '../components/profile/SettingRow'
 import { InfoTip } from '../components/InfoTip'
@@ -71,7 +69,6 @@ export function ProfilePage() {
   const { user, setUser, logout } = useAuth()
   const { toast, refresh } = useApp()
   const providers = useProviders()
-  const { data: strava } = useApiQuery(getStravaStatus, [])
   const [form, setForm] = useState(() => toForm(user))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -200,15 +197,15 @@ export function ProfilePage() {
         </Card>
       </div>
 
+      {/* De dónde llegan las salidas (Strava, ciclocomputador...) */}
+      <ConnectionsCard />
+
       {/* Cuenta: ajustes en filas, cada uno con su estado y su acción */}
       <Card>
         <CardHeader title="Cuenta y acceso" description="Cómo entras en BikeTelemetry" />
         <div className="mt-2 divide-y divide-zinc-800 border-t border-zinc-800">
           <PasswordSetting />
           {providers?.google && <GoogleAccess />}
-          {strava?.configured && (
-            <SettingRow title="Strava" status="Sincroniza tus salidas automáticamente." action={<StravaControls />} />
-          )}
           <SettingRow title="Sesión" status="Cierra la sesión en este navegador."
             action={<Button variant="secondary" size="sm" onClick={logout}>Cerrar sesión</Button>} />
         </div>

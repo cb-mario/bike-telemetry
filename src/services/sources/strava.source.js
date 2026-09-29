@@ -96,7 +96,7 @@ const hasActivityScope = (scope) => {
 // Strava es solo una fuente de salidas: siempre se conecta a una cuenta con sesión (la del state)
 async function handleCallback({ code, scope, state, error }) {
   const payload = readPurpose(state, [STATE_PURPOSE]);
-  const back = (status) => `${config.frontendUrl()}/salidas?strava=${status}`;
+  const back = (status) => `${config.frontendUrl()}/perfil?strava=${status}`;
   if (error) return back('denied');
   if (!code || !payload) return back('error');
   const userId = Number(payload.sub);
