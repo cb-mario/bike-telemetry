@@ -12,6 +12,8 @@ import { SegmentedControl } from '../components/ui/SegmentedControl'
 import { Label } from '../components/ui/Text'
 import { StravaControls } from '../components/StravaControls'
 import { useProviders } from '../lib/providers'
+import { getStravaStatus } from '../lib/strava'
+import { useApiQuery } from '../lib/useApiQuery'
 import { GoogleAccess } from '../components/GoogleAccess'
 import { PasswordSetting } from '../components/profile/PasswordSetting'
 import { SettingRow } from '../components/profile/SettingRow'
@@ -69,6 +71,7 @@ export function ProfilePage() {
   const { user, setUser, logout } = useAuth()
   const { toast, refresh } = useApp()
   const providers = useProviders()
+  const { data: strava } = useApiQuery(getStravaStatus, [])
   const [form, setForm] = useState(() => toForm(user))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -203,7 +206,7 @@ export function ProfilePage() {
         <div className="mt-2 divide-y divide-zinc-800 border-t border-zinc-800">
           <PasswordSetting />
           {providers?.google && <GoogleAccess />}
-          {providers?.strava && (
+          {strava?.configured && (
             <SettingRow title="Strava" status="Sincroniza tus salidas automáticamente." action={<StravaControls />} />
           )}
           <SettingRow title="Sesión" status="Cierra la sesión en este navegador."

@@ -19,13 +19,13 @@ describe('App', () => {
   });
 
   it('GET /api/auth/providers dice qué accesos externos están configurados', async () => {
-    assert.deepEqual((await request(app).get('/api/auth/providers')).body, { google: true, strava: true });
-    const saved = process.env.STRAVA_CLIENT_ID;
-    delete process.env.STRAVA_CLIENT_ID;
+    assert.deepEqual((await request(app).get('/api/auth/providers')).body, { google: true });
+    const saved = process.env.GOOGLE_CLIENT_ID;
+    delete process.env.GOOGLE_CLIENT_ID;
     try {
-      assert.deepEqual((await request(app).get('/api/auth/providers')).body, { google: true, strava: false });
+      assert.deepEqual((await request(app).get('/api/auth/providers')).body, { google: false });
     } finally {
-      process.env.STRAVA_CLIENT_ID = saved;
+      process.env.GOOGLE_CLIENT_ID = saved;
     }
   });
 

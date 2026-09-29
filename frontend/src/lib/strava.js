@@ -1,12 +1,12 @@
-import { api } from './api'
+import { connectConnection, disconnectConnection, getConnections, syncConnection } from './connections'
 
-export const getStravaStatus = () => api('/strava/status')
-export const syncStrava = () => api('/strava/sync', { method: 'POST' })
-export const disconnectStrava = () => api('/strava/disconnect', { method: 'POST' })
+export const getStravaStatus = async () => (await getConnections()).find((c) => c.provider === 'strava')
+export const syncStrava = () => syncConnection('strava')
+export const disconnectStrava = () => disconnectConnection('strava')
 
 // Redirige el navegador a la pantalla de autorización de Strava
 export async function connectStrava() {
-  const { url } = await api('/strava/auth-url')
+  const { url } = await connectConnection('strava')
   window.location.assign(url)
 }
 

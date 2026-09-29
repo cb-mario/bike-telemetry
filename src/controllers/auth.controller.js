@@ -2,7 +2,6 @@ const authService = require('../services/auth.service');
 const profileService = require('../services/profile.service');
 const { HttpError } = require('../errors');
 const { parseProfile, PROFILE_FIELDS } = require('../utils/profileValidation');
-const stravaService = require('../services/strava.service');
 const googleService = require('../services/google.service');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -94,10 +93,10 @@ async function updateMe(req, res) {
   res.json({ user: await profileService.updateProfile(req.user.id, changes) });
 }
 
-// Servicios externos configurados en el servidor (público): la interfaz oculta los que no lo están.
-// Google sirve para entrar; Strava solo para traer salidas
+// Accesos externos configurados en el servidor (público): la interfaz oculta los que no lo están.
+// Los servicios de los que llegan salidas van aparte, en /api/connections
 async function providers(req, res) {
-  res.json({ google: googleService.isConfigured(), strava: stravaService.isConfigured() });
+  res.json({ google: googleService.isConfigured() });
 }
 
 // Canje del ticket que el callback de Google deja en el frontend

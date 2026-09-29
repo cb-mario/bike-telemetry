@@ -1,12 +1,12 @@
-const Connection = require('../models/connection.model');
-const config = require('../config');
-const Activity = require('../models/activity.model');
-const { HttpError } = require('../errors');
-const { encrypt, decrypt } = require('../utils/crypto');
-const { parseActivity, HR_MIN, HR_MAX } = require('../utils/activityValidation');
-const { buildTrack } = require('./track.service');
-const { saveExternalRide } = require('./import.service');
-const { signPurpose, readPurpose } = require('../utils/signedToken');
+const Connection = require('../../models/connection.model');
+const config = require('../../config');
+const Activity = require('../../models/activity.model');
+const { HttpError } = require('../../errors');
+const { encrypt, decrypt } = require('../../utils/crypto');
+const { parseActivity, HR_MIN, HR_MAX } = require('../../utils/activityValidation');
+const { buildTrack } = require('../track.service');
+const { saveExternalRide } = require('../import.service');
+const { signPurpose, readPurpose } = require('../../utils/signedToken');
 
 const STRAVA_OAUTH = 'https://www.strava.com/oauth';
 const STRAVA_API = 'https://www.strava.com/api/v3';
@@ -26,14 +26,15 @@ const TIMEOUT_MS = 15000;
 
 const STATE_TTL = '10m';
 
+// Apagado salvo STRAVA_ENABLED=true, aunque estén las credenciales
 const isConfigured = () => {
-  const { clientId, clientSecret } = config.strava();
-  return Boolean(clientId && clientSecret);
+  const { enabled, clientId, clientSecret } = config.strava();
+  return Boolean(enabled && clientId && clientSecret);
 };
 
 function assertConfigured() {
   if (!isConfigured()) {
-    throw new HttpError(503, 'La integración con Strava no está configurada (STRAVA_CLIENT_ID / STRAVA_CLIENT_SECRET)');
+    throw new HttpError(503, 'La integración con Strava no está activada (STRAVA_ENABLED / STRAVA_CLIENT_ID / STRAVA_CLIENT_SECRET)');
   }
 }
 
@@ -306,16 +307,6 @@ async function importStreams(userId, activity, stravaId) {
   }
 }
 
-async function status(userId) {
-  const conn = await Connection.find(userId, PROVIDER);
-  return {
-    configured: isConfigured(),
-    connected: Boolean(conn?.refreshToken),
-    athleteId: conn?.account ?? null,
-    lastSyncAt: conn?.lastSyncAt ?? null,
-  };
-}
-
 // Revoca el acceso en Strava (si se puede) y borra la conexión; las actividades se conservan
 async function disconnect(userId) {
   const conn = await Connection.find(userId, PROVIDER);
@@ -332,6 +323,17 @@ async function disconnect(userId) {
   await Connection.remove(userId, PROVIDER);
 }
 
+// Fuente de salidas (forma común en sources/index.js). Se conecta por OAuth: `connect` devuelve
+// la URL de Strava y la vuelta llega a handleCallback
 module.exports = {
-  isConfigured, buildAuthUrl, handleCallback, sync, importStreams, status, disconnect, mapStravaActivity,
+  id: PROVIDER,
+  name: 'Strava',
+  auth: 'oauth',
+  isConfigured,
+  connect: (userId) => ({ url: buildAuthUrl(userId) }),
+  sync,
+  disconnect,
+  handleCallback,
+  importStreams,
+  mapStravaActivity,
 };

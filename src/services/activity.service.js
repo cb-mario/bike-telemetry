@@ -4,7 +4,7 @@ const polyline = require('../utils/polyline');
 const { parseActivity } = require('../utils/activityValidation');
 const { simplifyCoords, MAX_PREVIEW_POINTS } = require('./track.service');
 const { analyzeGpx } = require('./gpx.service');
-const stravaService = require('./strava.service');
+const strava = require('./sources/strava.source');
 const { findSameRide } = require('./import.service');
 
 const MAX_MAP_POINTS = 200;
@@ -112,7 +112,7 @@ async function getTrack(id, userId) {
   // Actividades de Strava: el track completo se descarga la primera vez que se pide
   if (!track && activity.source === 'strava') {
     const stravaId = await Activity.findExternalId(id, 'strava');
-    if (stravaId) track = await stravaService.importStreams(userId, activity, stravaId);
+    if (stravaId) track = await strava.importStreams(userId, activity, stravaId);
   }
   if (!track) throw new HttpError(404, 'Esta actividad no tiene track GPS');
 

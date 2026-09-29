@@ -9,8 +9,11 @@ const frontendUrl = () => withoutTrailingSlash(process.env.FRONTEND_URL || 'http
 
 const jwtSecret = () => process.env.JWT_SECRET;
 
+// Strava queda apagado salvo STRAVA_ENABLED=true (aunque estén sus credenciales): su API
+// solo admite al atleta dueño de la aplicación mientras Strava no la apruebe
 function strava() {
   return {
+    enabled: process.env.STRAVA_ENABLED === 'true',
     clientId: process.env.STRAVA_CLIENT_ID,
     clientSecret: process.env.STRAVA_CLIENT_SECRET,
     redirectUri: process.env.STRAVA_REDIRECT_URI || 'http://localhost:3000/api/strava/callback',
@@ -48,8 +51,8 @@ function configProblems() {
   if (!isValidTimeZone(appTimeZone())) {
     problems.push(`APP_TIMEZONE no es una zona horaria válida: ${appTimeZone()}`);
   }
-  const { clientId, clientSecret } = strava();
-  if (clientId && clientSecret && !/^[0-9a-f]{64}$/i.test(process.env.TOKEN_ENCRYPTION_KEY || '')) {
+  const { enabled, clientId, clientSecret } = strava();
+  if (enabled && clientId && clientSecret && !/^[0-9a-f]{64}$/i.test(process.env.TOKEN_ENCRYPTION_KEY || '')) {
     problems.push('Strava está configurado pero TOKEN_ENCRYPTION_KEY no es una clave de 64 caracteres hexadecimales');
   }
   return problems;

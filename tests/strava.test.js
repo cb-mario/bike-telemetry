@@ -44,13 +44,14 @@ describe('Strava', () => {
     });
   }
 
+  const stravaStatus = async () => (await auth(request(app).get('/api/connections'))).body.find((c) => c.provider === 'strava');
   const stravaConnection = () => prisma.connection.findUnique({ where: { userId_provider: { userId, provider: 'strava' } } });
   // Actividad importada de la salida de Strava con ese id
   const byStravaId = (externalId) => prisma.activity.findFirst({ where: { imports: { some: { provider: 'strava', externalId } } } });
 
-  describe('GET /api/strava/auth-url', () => {
+  describe('POST /api/connections/strava/connect', () => {
     it('genera la URL de autorización con scopes y state firmado', async () => {
-      const res = await auth(request(app).get('/api/strava/auth-url'));
+      const res = await auth(request(app).post('/api/connections/strava/connect'));
       assert.equal(res.status, 200);
       const url = new URL(res.body.url);
       assert.equal(url.origin + url.pathname, 'https://www.strava.com/oauth/authorize');
@@ -66,16 +67,16 @@ describe('Strava', () => {
       const saved = process.env.STRAVA_CLIENT_ID;
       delete process.env.STRAVA_CLIENT_ID;
       try {
-        const res = await auth(request(app).get('/api/strava/auth-url'));
+        const res = await auth(request(app).post('/api/connections/strava/connect'));
         assert.equal(res.status, 503);
-        assert.match(res.body.error, /no está configurada/);
+        assert.match(res.body.error, /Strava no está disponible/);
       } finally {
         process.env.STRAVA_CLIENT_ID = saved;
       }
     });
 
     it('requiere autenticación', async () => {
-      assert.equal((await request(app).get('/api/strava/auth-url')).status, 401);
+      assert.equal((await request(app).post('/api/connections/strava/connect')).status, 401);
     });
   });
 
@@ -142,8 +143,8 @@ describe('Strava', () => {
     });
   });
 
-  describe('POST /api/strava/sync', () => {
-    const sync = () => auth(request(app).post('/api/strava/sync'));
+  describe('POST /api/connections/strava/sync', () => {
+    const sync = () => auth(request(app).post('/api/connections/strava/sync'));
 
     it('sin conectar → 409', async () => {
       assert.equal((await sync()).status, 409);
@@ -187,8 +188,7 @@ describe('Strava', () => {
       assert.equal(gravel.sportType, 'GravelRide');
       assert.equal(gravel.avgHr, null);
 
-      const status = await auth(request(app).get('/api/strava/status'));
-      assert.ok(status.body.lastSyncAt);
+      assert.ok((await stravaStatus()).lastSyncAt);
     });
 
     it('no duplica actividades al sincronizar de nuevo', async () => {
@@ -345,7 +345,7 @@ describe('Strava', () => {
           heartrate: { data: [120, 130, 250] },
         }],
       });
-      await auth(request(app).post('/api/strava/sync'));
+      await auth(request(app).post('/api/connections/strava/sync'));
       const activity = await prisma.activity.findFirst();
 
       const first = await auth(request(app).get(`/api/activities/${activity.id}/track`));
@@ -358,19 +358,49 @@ describe('Strava', () => {
     });
   });
 
-  it('status y desconexión', async () => {
-    let res = await auth(request(app).get('/api/strava/status'));
-    assert.deepEqual(res.body, { configured: true, connected: false, athleteId: null, lastSyncAt: null });
+  it('estado en /api/connections y desconexión', async () => {
+    assert.deepEqual(await stravaStatus(), {
+      provider: 'strava', name: 'Strava', auth: 'oauth', configured: true, connected: false, account: null, lastSyncAt: null,
+    });
 
     await connect();
     const calls = mockStrava({ 'POST /oauth/deauthorize': () => [200, {}] });
-    res = await auth(request(app).get('/api/strava/status'));
-    assert.equal(res.body.connected, true);
+    assert.equal((await stravaStatus()).connected, true);
+    assert.equal((await stravaStatus()).account, '777');
 
-    assert.equal((await auth(request(app).post('/api/strava/disconnect'))).status, 204);
+    assert.equal((await auth(request(app).delete('/api/connections/strava'))).status, 204);
     assert.equal(calls[0].path, '/oauth/deauthorize');
-    res = await auth(request(app).get('/api/strava/status'));
-    assert.equal(res.body.connected, false);
+    assert.equal((await stravaStatus()).connected, false);
+    assert.equal(await stravaConnection(), null);
+  });
+
+  describe('/api/connections', () => {
+    it('requiere autenticación', async () => {
+      assert.equal((await request(app).get('/api/connections')).status, 401);
+    });
+
+    it('servicio desconocido → 404', async () => {
+      const res = await auth(request(app).post('/api/connections/nope/sync'));
+      assert.equal(res.status, 404);
+      assert.match(res.body.error, /Servicio no encontrado/);
+    });
+
+    it('Strava apagado (sin STRAVA_ENABLED=true) → configured: false y 503 al conectar o sincronizar', async () => {
+      process.env.STRAVA_ENABLED = 'false';
+      try {
+        assert.equal((await stravaStatus()).configured, false);
+        assert.equal((await auth(request(app).post('/api/connections/strava/connect'))).status, 503);
+        assert.equal((await auth(request(app).post('/api/connections/strava/sync'))).status, 503);
+      } finally {
+        process.env.STRAVA_ENABLED = 'true';
+      }
+    });
+
+    it('las rutas antiguas de /api/strava ya no existen (salvo el callback)', async () => {
+      for (const path of ['/api/strava/status', '/api/strava/auth-url']) {
+        assert.equal((await auth(request(app).get(path))).status, 404);
+      }
+    });
   });
 
   it('nunca expone los tokens en /api/auth/me', async () => {

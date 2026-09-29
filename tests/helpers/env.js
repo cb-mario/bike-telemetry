@@ -11,6 +11,7 @@ process.env.JWT_EXPIRES_IN = '1h';
 process.env.APP_TIMEZONE = 'UTC';
 process.env.BCRYPT_ROUNDS = '4';
 process.env.TOKEN_ENCRYPTION_KEY = '0'.repeat(64);
+process.env.STRAVA_ENABLED = 'true';
 process.env.STRAVA_CLIENT_ID = '12345';
 process.env.STRAVA_CLIENT_SECRET = 'strava-secret';
 process.env.STRAVA_REDIRECT_URI = 'http://localhost:3000/api/strava/callback';

@@ -5,6 +5,10 @@ function find(userId, provider) {
   return prisma.connection.findUnique({ where: { userId_provider: { userId, provider } } });
 }
 
+function findAllByUser(userId) {
+  return prisma.connection.findMany({ where: { userId } });
+}
+
 // Usuario que tiene conectada esa cuenta del servicio (para no conectarla a dos usuarios)
 function findByAccount(provider, account) {
   return prisma.connection.findUnique({ where: { provider_account: { provider, account } }, select: { userId: true } });
@@ -27,4 +31,4 @@ function remove(userId, provider) {
   return prisma.connection.deleteMany({ where: { userId, provider } });
 }
 
-module.exports = { find, findByAccount, save, update, remove };
+module.exports = { find, findAllByUser, findByAccount, save, update, remove };
