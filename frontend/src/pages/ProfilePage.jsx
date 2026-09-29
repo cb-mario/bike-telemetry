@@ -115,7 +115,7 @@ export function ProfilePage() {
       <AvatarPicker>
         <h1 className="truncate text-3xl font-semibold tracking-tight text-zinc-50">{displayName(user)}</h1>
         <p className="mt-1 truncate text-sm text-zinc-400">
-          {user.email ?? 'Entras con Strava'} · en BikeTelemetry desde {formatDate(user.createdAt)}
+          {user.email} · en BikeTelemetry desde {formatDate(user.createdAt)}
         </p>
         {!user.name && <p className="mt-1 text-sm text-zinc-300">Añade tu nombre en tus datos físicos para que aparezca aquí.</p>}
       </AvatarPicker>

@@ -73,18 +73,7 @@ function findByStravaAthleteId(stravaAthleteId) {
 
 // Formas de entrar de la cuenta (solo para decidir si se puede quitar una; nunca se expone)
 function findLoginMethods(id) {
-  return prisma.user.findUnique({ where: { id }, select: { passwordHash: true, googleId: true, stravaAthleteId: true } });
-}
-
-// ¿Puede entrar sin Strava (con contraseña o con Google)?
-async function canLoginWithoutStrava(id) {
-  const user = await findLoginMethods(id);
-  return Boolean(user?.passwordHash || user?.googleId);
-}
-
-// Cuenta nueva desde "Continuar con Strava" (sin email ni contraseña)
-function createFromStrava(data) {
-  return prisma.user.create({ data, select: { id: true } });
+  return prisma.user.findUnique({ where: { id }, select: { passwordHash: true, googleId: true } });
 }
 
 function updateStrava(id, data) {
@@ -108,5 +97,5 @@ function createFromGoogle(data) {
 
 module.exports = {
   findByEmail, findPublicById, replaceAvatar, deleteAvatar, findAvatar, findCredentialsById, updatePassword, create, updateProfile, findStravaById, findByStravaAthleteId, updateStrava,
-  findLoginMethods, canLoginWithoutStrava, createFromStrava, findByGoogleId, setGoogleId, createFromGoogle,
+  findLoginMethods, findByGoogleId, setGoogleId, createFromGoogle,
 };

@@ -10,19 +10,6 @@ export async function connectStrava() {
   window.location.assign(url)
 }
 
-// "Continuar con Strava" desde el login: no requiere sesión
-export async function loginWithStrava() {
-  const { url } = await api('/auth/strava/url')
-  window.location.assign(url)
-}
-
-// Motivos por los que el login con Strava vuelve a la pantalla de acceso (?strava_login=...)
-export const STRAVA_LOGIN_ERROR = {
-  denied: 'Has cancelado el acceso con Strava.',
-  scope: 'Para entrar con Strava hay que permitir el acceso a tus actividades: es lo que BikeTelemetry analiza.',
-  error: 'No se pudo iniciar sesión con Strava. Inténtalo de nuevo.',
-}
-
 // Mensajes para el resultado que devuelve el callback (?strava=...)
 export const STRAVA_RESULT = {
   connected: ['Cuenta de Strava conectada. Ya puedes sincronizar tus salidas.', 'success'],

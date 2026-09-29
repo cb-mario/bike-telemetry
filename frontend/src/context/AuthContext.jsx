@@ -29,7 +29,7 @@ export function AuthProvider({ children }) {
     setUser(user)
   }, [])
 
-  // Canjea el ticket de "Continuar con Strava/Google". Devuelve el usuario sin activarlo todavía,
+  // Canjea el ticket de "Continuar con Google". Devuelve el usuario sin activarlo todavía,
   // para que quien llama pueda elegir antes a qué pantalla entrar
   const exchangeLoginTicket = useCallback(async (ticket) => {
     const { user, token, created } = await api('/auth/exchange', { method: 'POST', body: { ticket } })

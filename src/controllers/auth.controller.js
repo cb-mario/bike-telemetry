@@ -94,17 +94,13 @@ async function updateMe(req, res) {
   res.json({ user: await profileService.updateProfile(req.user.id, changes) });
 }
 
-// Accesos externos configurados en el servidor (público): la interfaz oculta los que no lo están
+// Servicios externos configurados en el servidor (público): la interfaz oculta los que no lo están.
+// Google sirve para entrar; Strava solo para traer salidas
 async function providers(req, res) {
   res.json({ google: googleService.isConfigured(), strava: stravaService.isConfigured() });
 }
 
-// "Continuar con Strava" (público): URL de autorización de Strava
-async function stravaLoginUrl(req, res) {
-  res.json({ url: stravaService.buildLoginUrl() });
-}
-
-// Canje del ticket que el callback de Strava o de Google deja en el frontend
+// Canje del ticket que el callback de Google deja en el frontend
 async function exchange(req, res) {
   res.json(await authService.loginWithTicket(req.body?.ticket));
 }
@@ -137,6 +133,6 @@ async function googleUnlink(req, res) {
 }
 
 module.exports = {
-  register, login, forgotPassword, resetPassword, changePassword, me, updateMe, providers, stravaLoginUrl, exchange,
+  register, login, forgotPassword, resetPassword, changePassword, me, updateMe, providers, exchange,
   googleLoginUrl, googleLinkUrl, googleCallback, googleStatus, googleUnlink,
 };

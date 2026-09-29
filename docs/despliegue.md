@@ -56,11 +56,11 @@ Sin SMTP la app funciona, pero el enlace de recuperación solo se escribe en los
 
 ### Strava
 
-Es opcional: mientras falten sus variables, la app oculta «Continuar con Strava» y los botones de sincronizar, y aparecen solos al configurarlas. Lo mismo con Google.
+Es opcional: mientras falten sus variables, la app oculta la conexión con Strava y sus botones de sincronizar, y aparecen solos al configurarlas. Lo mismo con Google.
 
 1. En [strava.com/settings/api](https://www.strava.com/settings/api) pulsa **Edit** y cambia **Authorization Callback Domain** a `TU-PROYECTO.vercel.app` (solo el dominio: sin `https://` ni rutas). `localhost` sigue funcionando en desarrollo aunque no esté puesto.
 2. En Vercel añade `STRAVA_CLIENT_ID` y `STRAVA_CLIENT_SECRET` (los de esa misma página), `STRAVA_REDIRECT_URI=https://TU-PROYECTO.vercel.app/api/strava/callback` y `TOKEN_ENCRYPTION_KEY`. Si en local ya tienes una, usa **otra nueva** en producción: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`. Sin `TOKEN_ENCRYPTION_KEY` la API no arranca con Strava configurado.
-3. **Límite de Strava:** las aplicaciones nuevas solo admiten **un atleta** (tú). Cualquier otra persona que pulse «Continuar con Strava» verá un error de Strava. Para abrirlo a más gente hay que pedir una ampliación a Strava desde esa misma página; mientras tanto, los visitantes pueden entrar con email o Google e importar GPX.
+3. **Límite de Strava:** las aplicaciones nuevas solo admiten **un atleta** (tú). Cualquier otra persona que intente conectar su Strava verá un error de Strava. Para abrirlo a más gente hay que pedir una ampliación a Strava desde esa misma página; mientras tanto, pueden importar sus salidas con archivos GPX. Strava solo trae salidas: para entrar en la app se usa el email o Google.
 
 ### Google
 
@@ -96,4 +96,4 @@ Google tarda entre unos días y un par de semanas en mostrarla. Para el portfoli
 - **El build falla en `prisma migrate deploy`**: revisa `DIRECT_URL` (puerto 5432, contraseña sin `[ ]`).
 - **`self-signed certificate in certificate chain`** en los logs: a `DATABASE_URL` le falta `&uselibpqcompat=true`.
 - **La API responde 500 nada más arrancar**: los logs de la función (**Deployments → Functions**) dicen qué variable falta.
-- **El login con Strava/Google vuelve a localhost**: revisa `FRONTEND_URL` y las `*_REDIRECT_URI`.
+- **La vuelta desde Strava o Google llega a localhost**: revisa `FRONTEND_URL` y las `*_REDIRECT_URI`.

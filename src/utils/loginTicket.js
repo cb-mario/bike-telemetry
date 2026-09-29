@@ -1,6 +1,6 @@
 const { signPurpose, readPurpose } = require('./signedToken');
 
-// Ticket de corta duración con el que el callback de un proveedor externo (Strava, Google) pasa
+// Ticket de corta duración con el que el callback de un proveedor externo (Google) pasa
 // la sesión al frontend. Viaja en el fragmento de la URL (#), que no llega a ningún servidor ni
 // queda en los logs, y el frontend lo canjea en POST /api/auth/exchange por el JWT de sesión
 const PURPOSE = 'login-ticket';

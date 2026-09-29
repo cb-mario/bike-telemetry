@@ -134,8 +134,8 @@ async function status(userId) {
   return {
     configured: isConfigured(),
     linked: Boolean(methods.googleId),
-    // Sin contraseña ni Strava, Google es la única forma de entrar
-    canUnlink: Boolean(methods.passwordHash || methods.stravaAthleteId),
+    // Sin contraseña, Google es la única forma de entrar
+    canUnlink: Boolean(methods.passwordHash),
   };
 }
 

@@ -78,7 +78,7 @@ export function AppShell() {
               <DropdownMenuGroup>
                 <DropdownMenuLabel className="flex flex-col gap-0.5 py-1.5">
                   <span className="truncate text-sm font-medium text-foreground">{displayName(user)}</span>
-                  <span className="truncate font-normal">{user.email ?? 'Cuenta de Strava'}</span>
+                  <span className="truncate font-normal">{user.email}</span>
                 </DropdownMenuLabel>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />

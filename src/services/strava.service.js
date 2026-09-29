@@ -5,15 +5,12 @@ const { HttpError } = require('../errors');
 const { encrypt, decrypt } = require('../utils/crypto');
 const { parseActivity, HR_MIN, HR_MAX } = require('../utils/activityValidation');
 const { buildTrack } = require('./track.service');
-const { loginRedirect } = require('../utils/loginTicket');
 const { signPurpose, readPurpose } = require('../utils/signedToken');
 
 const STRAVA_OAUTH = 'https://www.strava.com/oauth';
 const STRAVA_API = 'https://www.strava.com/api/v3';
 const SCOPES = 'read,activity:read_all';
 const STATE_PURPOSE = 'strava-oauth';
-// Inicio de sesión con Strava (state sin usuario; la sesión se entrega con utils/loginTicket)
-const LOGIN_STATE_PURPOSE = 'strava-login';
 // Sincronización por páginas; como mucho SYNC_MAX_PAGES por vez (límite de Strava: 100 peticiones
 // cada 15 min). Si queda historial por traer, la respuesta lo indica con hasMore
 const SYNC_PAGE_SIZE = 100;
@@ -43,16 +40,8 @@ function assertConfigured() {
 // URL de autorización. "state" es un JWT firmado y de vida corta que identifica al usuario:
 // el callback llega desde el navegador sin cabecera Authorization y así además se evita CSRF
 function buildAuthUrl(userId) {
-  return authorizeUrl(signPurpose(STATE_PURPOSE, { sub: String(userId) }, STATE_TTL));
-}
-
-// URL para "Continuar con Strava" desde la pantalla de login (aún no hay usuario)
-function buildLoginUrl() {
-  return authorizeUrl(signPurpose(LOGIN_STATE_PURPOSE, {}, STATE_TTL));
-}
-
-function authorizeUrl(state) {
   assertConfigured();
+  const state = signPurpose(STATE_PURPOSE, { sub: String(userId) }, STATE_TTL);
   const { clientId, redirectUri } = config.strava();
   const params = new URLSearchParams({
     client_id: clientId,
@@ -101,11 +90,9 @@ const hasActivityScope = (scope) => {
 };
 
 // Procesa la vuelta desde Strava y devuelve la URL del frontend a la que redirigir.
-// El mismo callback sirve para conectar una cuenta existente y para iniciar sesión (según el state)
+// Strava es solo una fuente de salidas: siempre se conecta a una cuenta con sesión (la del state)
 async function handleCallback({ code, scope, state, error }) {
-  const payload = readPurpose(state, [STATE_PURPOSE, LOGIN_STATE_PURPOSE]);
-  if (payload?.purpose === LOGIN_STATE_PURPOSE) return handleLoginCallback({ code, scope, error });
-
+  const payload = readPurpose(state, [STATE_PURPOSE]);
   const back = (status) => `${config.frontendUrl()}/salidas?strava=${status}`;
   if (error) return back('denied');
   if (!code || !payload) return back('error');
@@ -130,43 +117,6 @@ async function handleCallback({ code, scope, state, error }) {
   }
 }
 
-// Datos de perfil que da Strava al autorizar (nunca el email)
-function profileFromAthlete(athlete = {}) {
-  const name = [athlete.firstname, athlete.lastname].filter(Boolean).join(' ').trim().slice(0, 60);
-  const sex = { M: 'male', F: 'female' }[athlete.sex];
-  return { ...(name && { name }), ...(sex && { sex }) };
-}
-
-// "Continuar con Strava": entra con la cuenta vinculada a ese atleta o crea una nueva
-async function handleLoginCallback({ code, scope, error }) {
-  const front = config.frontendUrl();
-  const fail = (status) => `${front}/entrar?strava_login=${status}`;
-  if (error) return fail('denied');
-  if (!code) return fail('error');
-  if (!hasActivityScope(scope)) return fail('scope');
-
-  try {
-    assertConfigured();
-    const data = await requestToken({ code, grant_type: 'authorization_code' });
-    const athleteId = String(data.athlete?.id ?? '');
-    if (!athleteId) return fail('error');
-
-    const existing = await User.findByStravaAthleteId(athleteId);
-    let userId = existing?.id;
-    if (existing) {
-      await User.updateStrava(userId, tokenFields(data));
-    } else {
-      ({ id: userId } = await User.createFromStrava({
-        stravaAthleteId: athleteId, ...tokenFields(data), ...profileFromAthlete(data.athlete),
-      }));
-    }
-
-    return loginRedirect(front, 'strava', userId, !existing);
-  } catch {
-    return fail('error');
-  }
-}
-
 // --- Llamadas autenticadas ----------------------------------------------------
 
 async function getConnectedUser(userId) {
@@ -188,13 +138,10 @@ async function getAccessToken(user) {
   return data.access_token;
 }
 
-// Borra los tokens. Si Strava es la única forma de entrar se conserva el atleta vinculado,
-// y volver a pulsar "Continuar con Strava" renueva los tokens
-async function clearConnection(userId) {
-  const keepIdentity = !(await User.canLoginWithoutStrava(userId));
+// Borra la conexión (el atleta y sus tokens); las salidas importadas se conservan
+function clearConnection(userId) {
   return User.updateStrava(userId, {
-    ...(!keepIdentity && { stravaAthleteId: null }),
-    stravaAccessToken: null, stravaRefreshToken: null, stravaTokenExpiresAt: null,
+    stravaAthleteId: null, stravaAccessToken: null, stravaRefreshToken: null, stravaTokenExpiresAt: null,
   });
 }
 
@@ -374,16 +321,11 @@ async function status(userId) {
     connected: Boolean(user.stravaAthleteId && user.stravaRefreshToken),
     athleteId: user.stravaAthleteId,
     lastSyncAt: user.stravaLastSyncAt,
-    // Sin contraseña ni Google, Strava es la única forma de entrar
-    canDisconnect: await User.canLoginWithoutStrava(userId),
   };
 }
 
 // Revoca el acceso en Strava (si se puede) y borra los tokens; las actividades se conservan
 async function disconnect(userId) {
-  if (!(await User.canLoginWithoutStrava(userId))) {
-    throw new HttpError(409, 'Tu cuenta entra con Strava: si lo desconectas no podrás volver a iniciar sesión');
-  }
   const user = await User.findStravaById(userId);
   if (user?.stravaAccessToken && isConfigured()) {
     try {
@@ -399,5 +341,5 @@ async function disconnect(userId) {
 }
 
 module.exports = {
-  isConfigured, buildAuthUrl, buildLoginUrl, handleCallback, sync, importStreams, status, disconnect, mapStravaActivity,
+  isConfigured, buildAuthUrl, handleCallback, sync, importStreams, status, disconnect, mapStravaActivity,
 };

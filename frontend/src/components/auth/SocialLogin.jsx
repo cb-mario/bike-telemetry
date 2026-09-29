@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router'
-import { Button } from '../ui/Button'
 import { FormError } from '../ui/Field'
-import { loginWithStrava, STRAVA_LOGIN_ERROR } from '../../lib/strava'
 import { loginWithGoogle, GOOGLE_LOGIN_ERROR } from '../../lib/google'
 import { useProviders } from '../../lib/providers'
 
@@ -18,58 +16,43 @@ function GoogleG() {
   )
 }
 
-const UNAVAILABLE = {
-  strava: 'El acceso con Strava no está disponible ahora mismo. Entra con tu email.',
-  google: 'El acceso con Google no está disponible ahora mismo. Entra con tu email.',
-}
+const UNAVAILABLE = 'El acceso con Google no está disponible ahora mismo. Entra con tu email.'
 
-// "Continuar con Google / Strava": entra en la cuenta vinculada o crea una nueva.
-// Solo aparecen los proveedores configurados en el servidor
+// "Continuar con Google": entra en la cuenta vinculada o crea una nueva.
+// Solo aparece si Google está configurado en el servidor
 export function SocialLogin() {
   const providers = useProviders()
   const [searchParams] = useSearchParams()
-  const [loading, setLoading] = useState(null)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState(() => {
     const google = searchParams.get('google_login')
-    const strava = searchParams.get('strava_login')
-    if (google) return GOOGLE_LOGIN_ERROR[google] ?? GOOGLE_LOGIN_ERROR.error
-    if (strava) return STRAVA_LOGIN_ERROR[strava] ?? STRAVA_LOGIN_ERROR.error
-    return ''
+    return google ? GOOGLE_LOGIN_ERROR[google] ?? GOOGLE_LOGIN_ERROR.error : ''
   })
 
-  async function start(provider, go) {
+  async function start() {
     setError('')
-    setLoading(provider)
+    setLoading(true)
     try {
-      await go() // navega al proveedor
+      await loginWithGoogle() // navega a Google
     } catch (err) {
-      // 503: el servidor no tiene credenciales de ese proveedor; no se muestran detalles técnicos
-      setError(err.status === 503 ? UNAVAILABLE[provider] : err.message)
-      setLoading(null)
+      // 503: el servidor no tiene credenciales de Google; no se muestran detalles técnicos
+      setError(err.status === 503 ? UNAVAILABLE : err.message)
+      setLoading(false)
     }
   }
 
-  if (!providers?.google && !providers?.strava) return <FormError>{error}</FormError>
+  if (!providers?.google) return <FormError>{error}</FormError>
 
   return (
     <div className="flex flex-col gap-3">
       {/* Botón de Google con los colores de su guía para fondo oscuro */}
-      {providers.google && (
-        <button type="button" onClick={() => start('google', loginWithGoogle)} disabled={Boolean(loading)}
-          aria-busy={loading === 'google' || undefined}
-          className="inline-flex h-10 w-full items-center justify-center gap-2.5 rounded-lg border border-[#8e918f] bg-[#131314] text-sm font-medium text-[#e3e3e3]
-            transition-colors duration-150 hover:bg-[#1f1f20] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-2
-            disabled:opacity-60">
-          <GoogleG />
-          {loading === 'google' ? 'Abriendo Google…' : 'Continuar con Google'}
-        </button>
-      )}
-      {providers.strava && (
-        <Button variant="strava" className="h-10 w-full" onClick={() => start('strava', loginWithStrava)}
-          loading={loading === 'strava'} disabled={loading === 'google'}>
-          Continuar con Strava
-        </Button>
-      )}
+      <button type="button" onClick={start} disabled={loading} aria-busy={loading || undefined}
+        className="inline-flex h-10 w-full items-center justify-center gap-2.5 rounded-lg border border-[#8e918f] bg-[#131314] text-sm font-medium text-[#e3e3e3]
+          transition-colors duration-150 hover:bg-[#1f1f20] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-2
+          disabled:opacity-60">
+        <GoogleG />
+        {loading ? 'Abriendo Google…' : 'Continuar con Google'}
+      </button>
       <FormError>{error}</FormError>
       <div className="flex items-center gap-3 text-xs text-zinc-500" aria-hidden>
         <span className="h-px flex-1 bg-zinc-800" />o con tu email<span className="h-px flex-1 bg-zinc-800" />

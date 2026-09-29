@@ -59,11 +59,4 @@ describe('Cambiar la contraseña desde el perfil', () => {
     assert.equal(res.body.user.hasPassword, true);
     assert.equal((await login('google@test.local', 'clave-de-google')).status, 200);
   });
-
-  it('una cuenta de Strava sin email no puede ponerse contraseña', async () => {
-    const user = await prisma.user.create({ data: { stravaAthleteId: '42' } });
-    const res = await change(signToken(user), { newPassword: 'clave-de-strava' });
-    assert.equal(res.status, 400);
-    assert.match(res.body.error, /no tiene email/);
-  });
 });

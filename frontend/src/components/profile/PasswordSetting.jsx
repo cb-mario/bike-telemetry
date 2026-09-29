@@ -10,7 +10,7 @@ const MIN_PASSWORD_LENGTH = 8
 const EMPTY = { currentPassword: '', newPassword: '', confirm: '' }
 
 // Cambiar la contraseña, o crear una si la cuenta entró con Google. El formulario se despliega
-// al pedirlo. Una cuenta de Strava sin email no puede usar contraseña: no se muestra
+// al pedirlo
 export function PasswordSetting() {
   const { user, setUser } = useAuth()
   const { toast } = useApp()
@@ -20,7 +20,6 @@ export function PasswordSetting() {
   const [saving, setSaving] = useState(false)
   const bind = (key) => ({ value: form[key], onChange: (e) => setForm((f) => ({ ...f, [key]: e.target.value })) })
 
-  if (!user.email) return null
   const creating = !user.hasPassword
 
   function close() {

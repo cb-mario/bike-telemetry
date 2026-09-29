@@ -5,10 +5,10 @@ import { Logo } from '../components/Logo'
 import { FormError } from '../components/ui/Field'
 import { Spinner } from '../components/ui/Spinner'
 
-const PROVIDERS = { strava: 'Strava', google: 'Google' }
+const PROVIDERS = { google: 'Google' }
 
-// Vuelta de "Continuar con Strava/Google" (/entrar/:provider#ticket=...): canjea el ticket por la sesión.
-// Una cuenta nueva de Strava entra en Salidas, donde ya puede sincronizar; el resto, en el Resumen
+// Vuelta de "Continuar con Google" (/entrar/:provider#ticket=...): canjea el ticket por la sesión
+// y entra en el Resumen
 export function ProviderLoginPage() {
   const { provider } = useParams()
   const name = PROVIDERS[provider] ?? 'tu cuenta'
@@ -24,12 +24,12 @@ export function ProviderLoginPage() {
     if (!ticket || started.current) return
     started.current = true
     exchangeLoginTicket(ticket)
-      .then(({ user, created }) => {
-        window.history.replaceState(null, '', created && provider === 'strava' ? '/salidas?strava=connected' : '/')
+      .then(({ user }) => {
+        window.history.replaceState(null, '', '/')
         setUser(user)
       })
       .catch((err) => setError(err.message))
-  }, [ticket, provider, exchangeLoginTicket, setUser])
+  }, [ticket, exchangeLoginTicket, setUser])
 
   return (
     <main className="flex min-h-svh flex-col items-center justify-center gap-6 px-4">

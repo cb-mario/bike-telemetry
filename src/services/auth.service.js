@@ -56,7 +56,7 @@ async function register(email, password, profile = {}) {
 
 async function login(email, password) {
   const user = await User.findByEmail(email);
-  // Cuentas sin contraseña (creadas con Strava) comparan contra el hash de relleno y fallan
+  // Cuentas sin contraseña (creadas con Google) comparan contra el hash de relleno y fallan
   const valid = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
 
   if (!user || !valid) {
@@ -66,7 +66,7 @@ async function login(email, password) {
   return { user: toPublicUser(await User.findPublicById(user.id)), token: signToken(user) };
 }
 
-// Canjea el ticket de "Continuar con Strava/Google" por una sesión normal
+// Canjea el ticket de "Continuar con Google" por una sesión normal
 async function loginWithTicket(ticket) {
   const data = readLoginTicket(ticket);
   const user = data && (await User.findPublicById(data.userId));
@@ -125,7 +125,7 @@ async function resetPassword(token, password) {
 }
 
 // Cambio de contraseña desde el perfil. Con contraseña hay que dar la actual; una cuenta creada
-// con Google puede ponerse una (con Strava sin email no: no tendría con qué iniciar sesión)
+// con Google puede ponerse una
 async function changePassword(userId, currentPassword, newPassword) {
   const user = await User.findCredentialsById(userId);
   if (!user) throw new HttpError(404, 'Usuario no encontrado');
@@ -135,8 +135,6 @@ async function changePassword(userId, currentPassword, newPassword) {
     if (typeof currentPassword !== 'string' || !(await bcrypt.compare(currentPassword, user.passwordHash))) {
       throw new HttpError(400, 'La contraseña actual no es correcta');
     }
-  } else if (!user.email) {
-    throw new HttpError(400, 'Tu cuenta no tiene email: entras con Strava y no puedes usar contraseña');
   }
 
   return toPublicUser(await User.updatePassword(userId, await bcrypt.hash(newPassword, SALT_ROUNDS)));

@@ -120,6 +120,15 @@ describe('Strava', () => {
       assert.equal(res.headers.location, `${FRONT}?strava=taken`);
     });
 
+    it('el antiguo "Continuar con Strava" ya no crea cuentas ni abre sesión', async () => {
+      const calls = mockStrava({ 'POST /oauth/token': () => tokenResponse({ athlete: { id: 888 } }) });
+      const res = await callback({ code: 'abc', scope: 'activity:read_all', state: jwt.sign({ purpose: 'strava-login' }, process.env.JWT_SECRET) });
+      assert.equal(res.headers.location, `${FRONT}?strava=error`);
+      assert.equal(calls.length, 0);
+      assert.equal(await prisma.user.count(), 1);
+      assert.equal((await request(app).get('/api/auth/strava/url')).status, 404);
+    });
+
     it('Strava rechaza el código → ?strava=error', async () => {
       mockStrava({ 'POST /oauth/token': () => [400, { message: 'Bad Request' }] });
       const res = await callback({ code: 'caducado', scope: 'activity:read_all', state: stateFor(userId) });
@@ -314,7 +323,7 @@ describe('Strava', () => {
 
   it('status y desconexión', async () => {
     let res = await auth(request(app).get('/api/strava/status'));
-    assert.deepEqual(res.body, { configured: true, connected: false, athleteId: null, lastSyncAt: null, canDisconnect: true });
+    assert.deepEqual(res.body, { configured: true, connected: false, athleteId: null, lastSyncAt: null });
 
     await connect();
     const calls = mockStrava({ 'POST /oauth/deauthorize': () => [200, {}] });
