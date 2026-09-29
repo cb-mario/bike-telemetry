@@ -8,7 +8,8 @@ Aplicación web para registrar salidas en bici, analizar el rendimiento y planif
 
 ## Funciones
 
-- **Salidas:** alta manual, importación de archivos GPX (distancia, desnivel, tiempo en movimiento y pulso se calculan solos) y sincronización con Strava.
+- **Salidas:** alta manual, importación de archivos GPX y FIT (distancia, desnivel, tiempo en movimiento y pulso se calculan solos) y carga de golpe de las salidas del ciclocomputador (su carpeta por USB o los `.fit` exportados).
+- **Conexiones** (Perfil → Conexiones): cuenta de iGPSPORT (descarga los `.fit` originales de su nube con la API no oficial de su web), guía para importar los `.fit` de Garmin y Strava (apagado salvo `STRAVA_ENABLED=true`). Una salida que llega por dos vías (misma hora de inicio, ±2 min) no se duplica.
 - **Resumen:** última salida con su recorrido, el mes en curso comparado con el mismo tramo del anterior, histórico total y evolución por semanas o meses.
 - **Zonas de pulso:** cinco zonas a partir de la FC máxima indicada, la mayor registrada o la estimada por edad.
 - **Detalle de salida:** mapa del recorrido y perfil de altitud enlazados (al pasar el cursor por el perfil se sitúa el punto en el mapa).
@@ -77,7 +78,8 @@ Producción en Vercel (frontend estático + API como función serverless, `api/i
 src/                 Backend
   routes/            Endpoints REST
   controllers/       Validación de peticiones y respuestas
-  services/          Lógica de negocio (estadísticas, zonas, GPX, Strava, Google, correo, rutas)
+  services/          Lógica de negocio (estadísticas, zonas, GPX, FIT, Google, correo, rutas)
+    sources/         Servicios de los que llegan salidas (iGPSPORT, Strava), con la misma forma
   models/            Acceso a datos con Prisma
   middlewares/       Autenticación y gestión de errores
 prisma/              Esquema y migraciones

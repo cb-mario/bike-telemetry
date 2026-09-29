@@ -1,5 +1,6 @@
 const { HttpError } = require('../../errors');
 const strava = require('./strava.source');
+const igpsport = require('./igpsport.source');
 
 // Servicios de los que llegan salidas. Cada uno tiene la misma forma:
 //   id, name          identificador ("strava") y nombre para mostrar
@@ -11,7 +12,7 @@ const strava = require('./strava.source');
 //   disconnect(userId)
 // La conexión de cada usuario se guarda en Connection y las salidas pasan por import.service,
 // que evita duplicados entre fuentes
-const SOURCES = [strava];
+const SOURCES = [igpsport, strava];
 
 function getSource(provider) {
   const source = SOURCES.find((s) => s.id === provider);

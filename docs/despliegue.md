@@ -41,6 +41,7 @@ Opcionales, según lo que quieras activar:
 |---|---|
 | Recuperar contraseña por correo | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` (ver abajo) |
 | Strava | `STRAVA_ENABLED=true`, `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, `STRAVA_REDIRECT_URI=https://TU-PROYECTO.vercel.app/api/strava/callback`, `TOKEN_ENCRYPTION_KEY` |
+| iGPSPORT | `TOKEN_ENCRYPTION_KEY` (sin ella no se ofrece); `IGPSPORT_API_URL` solo para cuentas de China |
 | Google | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI=https://TU-PROYECTO.vercel.app/api/auth/google/callback` |
 | Search Console | `VITE_GOOGLE_SITE_VERIFICATION` (ver paso 4) |
 

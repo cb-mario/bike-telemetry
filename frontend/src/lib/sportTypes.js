@@ -10,4 +10,4 @@ export const SPORT_TYPES = [
 
 export const sportLabel = (type) => SPORT_TYPES.find((t) => t.value === type)?.label ?? 'Salida'
 
-export const SOURCE_LABEL = { strava: 'Strava', gpx: 'GPX', manual: 'Manual' }
+export const SOURCE_LABEL = { strava: 'Strava', gpx: 'GPX', fit: 'FIT', igpsport: 'iGPSPORT', manual: 'Manual' }

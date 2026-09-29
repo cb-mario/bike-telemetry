@@ -9,15 +9,16 @@ import { Card, CardHeader } from '../ui/Card'
 import { Dialog } from '../ui/Dialog'
 import { Spinner } from '../ui/Spinner'
 import { CredentialsForm } from './CredentialsForm'
+import { FILE_SOURCES, FileSourceSteps } from './FileSources'
 
 // Tarjeta «Conexiones» del perfil: de dónde llegan las salidas. Una fila por servicio configurado
-// en el servidor; los datos de acceso (si el servicio los pide) se escriben en un diálogo
+// en el servidor y otra por aparato del que se importan archivos; los datos de acceso y los pasos
+// para sacar los archivos van en un diálogo
 export function ConnectionsCard() {
   const { connections, syncing, sync, connect, disconnect } = useConnections()
   const [asking, setAsking] = useState(null) // conexión que pide usuario y contraseña
+  const [fileSource, setFileSource] = useState(null)
   useOAuthResult()
-
-  if (!connections?.length) return null
 
   function handleConnect(connection) {
     if (connection.auth === 'credentials') return setAsking(connection)
@@ -35,11 +36,20 @@ export function ConnectionsCard() {
     <Card>
       <CardHeader title="Conexiones" description="De dónde llegan tus salidas. Las que ya tengas nunca se duplican." />
       <ul className="mt-2 divide-y divide-zinc-800 border-t border-zinc-800">
-        {connections.map((c) => (
+        {connections?.map((c) => (
           <ConnectionRow key={c.provider} connection={c} syncing={syncing} busy={Boolean(syncing)}
             onConnect={() => handleConnect(c)} onSync={() => sync([c])} onDisconnect={() => disconnect(c)} />
         ))}
+        {FILE_SOURCES.map((source) => (
+          <Row key={source.id} name={source.name} kind="Archivos .fit" detail={source.detail}
+            action={<Button variant="secondary" size="sm" onClick={() => setFileSource(source)}>Importar</Button>} />
+        ))}
       </ul>
+
+      <Dialog open={Boolean(fileSource)} onClose={() => setFileSource(null)} title={fileSource ? `Importar desde ${fileSource.name}` : ''}
+        description={fileSource && `${fileSource.name} no ofrece conexión directa para apps personales: se importan sus archivos .fit, con pulso, potencia y cadencia.`}>
+        {fileSource && <FileSourceSteps source={fileSource} onClose={() => setFileSource(null)} />}
+      </Dialog>
 
       <Dialog open={Boolean(asking)} onClose={() => setAsking(null)} title={asking ? `Conectar ${asking.name}` : ''}
         description={asking && SOURCE_INFO[asking.provider]?.detail}>
@@ -76,26 +86,19 @@ function ConnectionRow({ connection: c, syncing, busy, onConnect, onSync, onDisc
     </span>
   ) : info.detail
 
+  const action = c.connected ? (
+    <>
+      <Button variant="ghost" size="sm" onClick={onDisconnect} disabled={busy}>Desconectar</Button>
+      <Button variant="secondary" size="sm" onClick={onSync} loading={current} disabled={busy}>Sincronizar</Button>
+    </>
+  ) : (
+    <Button variant={info.connectVariant ?? 'secondary'} size="sm" onClick={handleConnect} loading={connecting} disabled={busy}>
+      Conectar
+    </Button>
+  )
+
   return (
-    <li className="px-5 py-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-zinc-100">{c.name}</p>
-          <div className="mt-0.5 text-sm text-zinc-400">{detail}</div>
-        </div>
-        <div className="flex items-center gap-2">
-          {c.connected ? (
-            <>
-              <Button variant="ghost" size="sm" onClick={onDisconnect} disabled={busy}>Desconectar</Button>
-              <Button variant="secondary" size="sm" onClick={onSync} loading={current} disabled={busy}>Sincronizar</Button>
-            </>
-          ) : (
-            <Button variant={info.connectVariant ?? 'secondary'} size="sm" onClick={handleConnect} loading={connecting} disabled={busy}>
-              Conectar
-            </Button>
-          )}
-        </div>
-      </div>
+    <Row name={c.name} kind="Sincronización" detail={detail} action={action}>
       {current && (
         <p className="mt-3 flex items-center gap-2 text-sm text-zinc-300" aria-live="polite">
           <Spinner className="size-4" />
@@ -104,6 +107,24 @@ function ConnectionRow({ connection: c, syncing, busy, onConnect, onSync, onDisc
             : `Buscando salidas en ${c.name}…`}
         </p>
       )}
+    </Row>
+  )
+}
+
+function Row({ name, kind, detail, action, children }) {
+  return (
+    <li className="px-5 py-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="flex items-baseline gap-2">
+            <span className="text-sm font-medium text-zinc-100">{name}</span>
+            <span className="text-xs text-zinc-500">{kind}</span>
+          </p>
+          <div className="mt-0.5 text-sm text-zinc-400">{detail}</div>
+        </div>
+        <div className="flex items-center gap-2">{action}</div>
+      </div>
+      {children}
     </li>
   )
 }

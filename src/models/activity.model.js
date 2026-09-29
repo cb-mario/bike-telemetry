@@ -54,20 +54,21 @@ function create(userId, data) {
   return prisma.activity.create({ data: { ...data, userId }, include: withPreview });
 }
 
-// Crea la actividad y su track en una sola operación
-function createWithTrack(userId, data, track) {
+// Crea la actividad importada de un archivo y, si tiene GPS, su track en una sola operación
+function createWithTrack(userId, data, track, source = 'gpx') {
   return prisma.activity.create({
-    data: { ...data, userId, source: 'gpx', track: { create: track } },
+    data: { ...data, userId, source, ...(track && { track: { create: track } }) },
     include: withPreview,
   });
 }
 
 // --- Salidas de servicios externos (ActivityImport) ---
 
-// Crea la actividad y la anota como importada de ese servicio, en una sola operación
-function createImported(userId, data, { provider, externalId }) {
+// Crea la actividad (con su track, si lo hay) y la anota como importada de ese servicio,
+// en una sola operación
+function createImported(userId, data, { provider, externalId }, track = null) {
   return prisma.activity.create({
-    data: { ...data, userId, imports: { create: { provider, externalId } } },
+    data: { ...data, userId, imports: { create: { provider, externalId } }, ...(track && { track: { create: track } }) },
     include: withPreview,
   });
 }

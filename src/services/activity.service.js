@@ -4,10 +4,12 @@ const polyline = require('../utils/polyline');
 const { parseActivity } = require('../utils/activityValidation');
 const { simplifyCoords, MAX_PREVIEW_POINTS } = require('./track.service');
 const { analyzeGpx } = require('./gpx.service');
+const { analyzeFit } = require('./fit.service');
 const strava = require('./sources/strava.source');
 const { findSameRide } = require('./import.service');
 
 const MAX_MAP_POINTS = 200;
+const FORMAT_LABEL = { gpx: 'GPX', fit: 'FIT' };
 
 // Coordenadas del recorrido por segmentos: track guardado o, si no, la polilínea de Strava
 function routeSegments({ track, summaryPolyline }, maxPoints) {
@@ -60,9 +62,10 @@ async function create(userId, data) {
   return toPublic(await Activity.create(userId, data));
 }
 
-// Crea la actividad y su track a partir de un .gpx; `title` opcional (si no, el del GPX o la fecha)
-async function importGpx(userId, buffer, title) {
-  const { name, stats, track, summaryPolyline } = analyzeGpx(buffer);
+// Analiza un .gpx o un .fit y devuelve los datos validados de la actividad y su track (null sin GPS).
+// `title` opcional: si no, el del archivo o la fecha
+async function analyzeFile(buffer, { format, title }) {
+  const { name, stats, track, summaryPolyline, sportType } = format === 'fit' ? await analyzeFit(buffer) : analyzeGpx(buffer);
   const finalTitle = title?.trim() || name?.trim() || `Salida del ${stats.startTime.toISOString().slice(0, 10)}`;
 
   // Los datos calculados pasan por la misma validación que una actividad manual
@@ -77,18 +80,24 @@ async function importGpx(userId, buffer, title) {
       avgHr: stats.avgHr,
       maxHr: stats.maxHr,
       maxSpeedKmh: stats.maxSpeedKmh,
+      ...(sportType && { sportType }),
     }, { partial: false });
   } catch (err) {
-    if (err instanceof HttpError) throw new HttpError(400, `El GPX genera datos no válidos: ${err.message}`);
+    if (err instanceof HttpError) throw new HttpError(400, `El ${FORMAT_LABEL[format]} genera datos no válidos: ${err.message}`);
     throw err;
   }
 
   assertHeartRateCoherent(data);
+  return { data: { ...data, summaryPolyline }, track };
+}
+
+// Crea la actividad (y su track, si hay GPS) a partir de un .gpx o un .fit subido a mano.
+// 409 si ya hay una salida a la misma hora: así se puede cargar varias veces la misma carpeta
+async function importFile(userId, buffer, { format = 'gpx', title } = {}) {
+  const { data, track } = await analyzeFile(buffer, { format, title });
   const same = await findSameRide(userId, data.date);
-  if (same) {
-    throw new HttpError(409, `Esta salida ya está registrada: «${same.title}»`);
-  }
-  return toPublic(await Activity.createWithTrack(userId, { ...data, summaryPolyline }, track));
+  if (same) throw new HttpError(409, `Esta salida ya está registrada: «${same.title}»`);
+  return toPublic(await Activity.createWithTrack(userId, data, track, format));
 }
 
 async function update(id, userId, changes) {
@@ -131,4 +140,4 @@ async function remove(id, userId) {
   await Activity.remove(id);
 }
 
-module.exports = { list, routes, getById, create, importGpx, update, remove, getTrack };
+module.exports = { list, routes, getById, create, analyzeFile, importFile, update, remove, getTrack };

@@ -8,9 +8,10 @@ export function DropOverlay() {
           <Icon name="upload" className="size-6" />
         </div>
         <div>
-          <p className="text-lg font-semibold tracking-tight text-zinc-100">Suelta tu archivo GPX</p>
+          <p className="text-lg font-semibold tracking-tight text-zinc-100">Suelta tus archivos GPX o FIT</p>
           <p className="mt-1 text-sm text-zinc-400">
-            Con tiempos se guarda como salida; sin ellos, como ruta planificada
+            Los FIT y los GPX con tiempos se guardan como salidas; un GPX sin tiempos, como ruta planificada.
+            También puedes soltar la carpeta del ciclocomputador.
           </p>
         </div>
       </div>

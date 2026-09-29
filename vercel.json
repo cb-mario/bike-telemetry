@@ -4,7 +4,7 @@
   "buildCommand": "npx prisma migrate deploy && npm --prefix frontend ci && npm --prefix frontend run build",
   "outputDirectory": "frontend/dist",
   "functions": {
-    "api/index.js": { "includeFiles": "src/generated/prisma/**", "maxDuration": 60 }
+    "api/index.js": { "includeFiles": "{src/generated/prisma/**,node_modules/@garmin/fitsdk/**}", "maxDuration": 60 }
   },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api" },

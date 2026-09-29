@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
+import { droppedFiles } from './deviceFiles'
 
-// Detecta archivos arrastrados sobre la ventana y entrega el que se suelte
+// Detecta archivos arrastrados sobre la ventana y entrega el primero que se suelte
+// y una promesa con todos (con el contenido de las carpetas)
 export function useWindowFileDrag(enabled, onDropFile) {
   const [dragging, setDragging] = useState(false)
   const depth = useRef(0)
@@ -33,7 +35,8 @@ export function useWindowFileDrag(enabled, onDropFile) {
       const file = e.dataTransfer.files?.[0]
       const wasDragging = depth.current > 0
       reset()
-      if (enabled && wasDragging && file) onDropRef.current(file)
+      // Las carpetas soltadas solo se pueden abrir durante el evento: se recorren ya y se entrega la promesa
+      if (enabled && wasDragging && file) onDropRef.current(file, droppedFiles(e.dataTransfer))
     }
 
     window.addEventListener('dragenter', onEnter)

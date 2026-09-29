@@ -13,6 +13,7 @@ router.get('/', activityController.list);
 router.get('/routes', activityController.routes);
 router.post('/', activityController.create);
 router.post('/upload-gpx', uploadGpx, activityController.uploadGpx);
+router.post('/import', uploadGpx.activityFile, activityController.importFile);
 router.get('/:id', activityController.getById);
 router.get('/:id/track', activityController.getTrack);
 router.patch('/:id', activityController.update);

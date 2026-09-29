@@ -67,4 +67,16 @@ function authLimiters({ skip } = {}) {
   };
 }
 
-module.exports = { authLimiters };
+// Conectar un servicio con credenciales (iGPSPORT) reenvía email y contraseña a su servidor:
+// que no sirva para probar contraseñas ajenas. Los intentos que salen bien no cuentan
+function connectLimiter({ skip } = {}) {
+  return limiter({
+    windowMs: 15 * MINUTE,
+    limit: 10,
+    skipSuccessfulRequests: true,
+    skip,
+    message: 'Demasiados intentos de conectar. Espera unos minutos y vuelve a probar',
+  });
+}
+
+module.exports = { authLimiters, connectLimiter };

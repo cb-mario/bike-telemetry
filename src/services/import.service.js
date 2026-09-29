@@ -13,17 +13,17 @@ function findSameRide(userId, date) {
   });
 }
 
-// Guarda una salida que llega de un servicio externo. Si ya estaba (misma hora, por otra vía),
-// no la duplica: la anota como la misma salida para no volver a traerla.
+// Guarda una salida que llega de un servicio externo (con su track, si lo trae). Si ya estaba
+// (misma hora, por otra vía), no la duplica: la anota como la misma salida para no volver a traerla.
 // Devuelve { activity, created } o null si otra sincronización simultánea ya la ha guardado
-async function saveExternalRide(userId, ref, data) {
+async function saveExternalRide(userId, ref, data, track = null) {
   try {
     const same = await findSameRide(userId, data.date);
     if (same) {
       await Activity.addImport(same.id, ref);
       return { activity: same, created: false };
     }
-    return { activity: await Activity.createImported(userId, data, ref), created: true };
+    return { activity: await Activity.createImported(userId, data, ref, track), created: true };
   } catch (err) {
     if (err.code === 'P2002') return null; // esa salida del servicio ya está anotada
     throw err;

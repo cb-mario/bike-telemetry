@@ -15,7 +15,7 @@ import { ZONE_BG } from '../lib/zones'
 
 const STEPS = [
   { title: 'Crea tu cuenta', text: 'Email y contraseña. Si añades tu edad y tu FC en reposo, las zonas de pulso se ajustan a ti.' },
-  { title: 'Trae tus salidas', text: 'Conecta Strava para sincronizarlas o arrastra tus archivos GPX a la app.' },
+  { title: 'Trae tus salidas', text: 'Conecta tu cuenta de iGPSPORT o arrastra los .fit y .gpx de tu ciclocomputador a la app.' },
   { title: 'Analiza y planifica', text: 'Revisa tu progresión y tus zonas, y dibuja la próxima ruta para llevarla al ciclocomputador.' },
 ]
 
@@ -95,7 +95,7 @@ function Hero({ signedIn }) {
           )}
         </div>
         <ul className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-zinc-500">
-          <li className="flex items-center gap-1.5"><span aria-hidden className="size-1.5 rounded-full bg-strava" />Sincroniza con Strava</li>
+          <li className="flex items-center gap-1.5"><span aria-hidden className="size-1.5 rounded-full bg-zinc-600" />Ciclocomputadores iGPSPORT y Garmin</li>
           <li className="flex items-center gap-1.5"><span aria-hidden className="size-1.5 rounded-full bg-zinc-600" />Importa y exporta GPX</li>
         </ul>
       </div>

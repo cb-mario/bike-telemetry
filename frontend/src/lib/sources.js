@@ -1,5 +1,10 @@
 // Textos de cada servicio conectable (el estado viene de /api/connections)
 export const SOURCE_INFO = {
+  igpsport: {
+    detail: 'Trae todas tus salidas de su nube, sin cable.',
+    credentialsNote: 'La contraseña solo se usa para iniciar sesión en iGPSPORT; no se guarda. Es la conexión que usa su web, '
+      + 'no una integración oficial: si iGPSPORT la cambia, puede dejar de funcionar.',
+  },
   strava: {
     detail: 'Trae tus salidas en bici de Strava.',
     // Guía de marca de Strava: el botón de conectar lleva su naranja
