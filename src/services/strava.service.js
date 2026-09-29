@@ -1,15 +1,17 @@
-const User = require('../models/user.model');
+const Connection = require('../models/connection.model');
 const config = require('../config');
 const Activity = require('../models/activity.model');
 const { HttpError } = require('../errors');
 const { encrypt, decrypt } = require('../utils/crypto');
 const { parseActivity, HR_MIN, HR_MAX } = require('../utils/activityValidation');
 const { buildTrack } = require('./track.service');
+const { saveExternalRide } = require('./import.service');
 const { signPurpose, readPurpose } = require('../utils/signedToken');
 
 const STRAVA_OAUTH = 'https://www.strava.com/oauth';
 const STRAVA_API = 'https://www.strava.com/api/v3';
 const SCOPES = 'read,activity:read_all';
+const PROVIDER = 'strava';
 const STATE_PURPOSE = 'strava-oauth';
 // Sincronización por páginas; como mucho SYNC_MAX_PAGES por vez (límite de Strava: 100 peticiones
 // cada 15 min). Si queda historial por traer, la respuesta lo indica con hasMore
@@ -79,9 +81,9 @@ async function requestToken(params) {
 }
 
 const tokenFields = (data) => ({
-  stravaAccessToken: encrypt(data.access_token),
-  stravaRefreshToken: encrypt(data.refresh_token),
-  stravaTokenExpiresAt: new Date(data.expires_at * 1000),
+  accessToken: encrypt(data.access_token),
+  refreshToken: encrypt(data.refresh_token),
+  tokenExpiresAt: new Date(data.expires_at * 1000),
 });
 
 const hasActivityScope = (scope) => {
@@ -107,10 +109,10 @@ async function handleCallback({ code, scope, state, error }) {
     const athleteId = String(data.athlete?.id ?? '');
     if (!athleteId) return back('error');
 
-    const owner = await User.findByStravaAthleteId(athleteId);
-    if (owner && owner.id !== userId) return back('taken');
+    const owner = await Connection.findByAccount(PROVIDER, athleteId);
+    if (owner && owner.userId !== userId) return back('taken');
 
-    await User.updateStrava(userId, { stravaAthleteId: athleteId, ...tokenFields(data) });
+    await Connection.save(userId, PROVIDER, { account: athleteId, ...tokenFields(data) });
     return back('connected');
   } catch {
     return back('error');
@@ -119,41 +121,31 @@ async function handleCallback({ code, scope, state, error }) {
 
 // --- Llamadas autenticadas ----------------------------------------------------
 
-async function getConnectedUser(userId) {
-  const user = await User.findStravaById(userId);
-  if (!user) throw new HttpError(404, 'Usuario no encontrado');
-  if (!user.stravaAthleteId || !user.stravaRefreshToken) {
-    throw new HttpError(409, 'Conecta tu cuenta de Strava primero');
-  }
-  return user;
+async function getConnection(userId) {
+  const conn = await Connection.find(userId, PROVIDER);
+  if (!conn?.refreshToken) throw new HttpError(409, 'Conecta tu cuenta de Strava primero');
+  return conn;
 }
 
 // Access token vigente, renovándolo con el refresh token si está a punto de caducar
-async function getAccessToken(user) {
-  if (user.stravaTokenExpiresAt && user.stravaTokenExpiresAt.getTime() - Date.now() > REFRESH_MARGIN_MS) {
-    return decrypt(user.stravaAccessToken);
+async function getAccessToken(conn) {
+  if (conn.tokenExpiresAt && conn.tokenExpiresAt.getTime() - Date.now() > REFRESH_MARGIN_MS) {
+    return decrypt(conn.accessToken);
   }
-  const data = await requestToken({ grant_type: 'refresh_token', refresh_token: decrypt(user.stravaRefreshToken) });
-  await User.updateStrava(user.id, tokenFields(data));
+  const data = await requestToken({ grant_type: 'refresh_token', refresh_token: decrypt(conn.refreshToken) });
+  await Connection.update(conn.userId, PROVIDER, tokenFields(data));
   return data.access_token;
 }
 
-// Borra la conexión (el atleta y sus tokens); las salidas importadas se conservan
-function clearConnection(userId) {
-  return User.updateStrava(userId, {
-    stravaAthleteId: null, stravaAccessToken: null, stravaRefreshToken: null, stravaTokenExpiresAt: null,
-  });
-}
-
-async function stravaGet(user, path) {
+async function stravaGet(conn, path) {
   assertConfigured();
-  const token = await getAccessToken(user);
+  const token = await getAccessToken(conn);
   const { res, data } = await stravaRequest(`${STRAVA_API}${path}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (res.status === 401) {
     // Acceso revocado desde Strava: se desvincula para que el usuario pueda reconectar
-    await clearConnection(user.id);
+    await Connection.remove(conn.userId, PROVIDER);
     throw new HttpError(409, 'Strava ha revocado el acceso. Vuelve a conectar tu cuenta');
   }
   if (res.status === 429) throw new HttpError(429, 'Límite de peticiones de Strava alcanzado. Inténtalo en unos minutos');
@@ -169,7 +161,8 @@ const sanitizeHr = (value) => {
   return Number.isFinite(hr) && hr >= HR_MIN && hr <= HR_MAX ? hr : null;
 };
 
-// Actividad de Strava → datos validados de nuestra Activity (null si no es válida)
+// Actividad de Strava → datos validados de nuestra Activity (null si no es válida).
+// Su id en Strava se guarda aparte, en ActivityImport
 function mapStravaActivity(s) {
   const avgHr = s.has_heartrate ? sanitizeHr(s.average_heartrate) : null;
   const maxHr = s.has_heartrate ? sanitizeHr(s.max_heartrate) : null;
@@ -194,7 +187,6 @@ function mapStravaActivity(s) {
       ...data,
       sportType: s.sport_type || s.type,
       source: 'strava',
-      stravaId: String(s.id),
       summaryPolyline: s.map?.summary_polyline || null,
     };
   } catch {
@@ -202,19 +194,19 @@ function mapStravaActivity(s) {
   }
 }
 
-async function fetchActivityPage(user, { page, before }) {
+async function fetchActivityPage(conn, { page, before }) {
   const params = new URLSearchParams({ per_page: SYNC_PAGE_SIZE, page, ...(before && { before }) });
-  const list = await stravaGet(user, `/athlete/activities?${params}`);
+  const list = await stravaGet(conn, `/athlete/activities?${params}`);
   if (!Array.isArray(list)) throw new HttpError(502, 'Respuesta inesperada de Strava');
   return list;
 }
 
 // Recorre las páginas (de la más reciente a la más antigua) mientras `keepGoing(lista)` lo pida
 // y no se acabe el presupuesto de páginas. Devuelve si ha llegado al final del historial
-async function walkPages(user, { before, budget, onPage }) {
+async function walkPages(conn, { before, budget, onPage }) {
   for (let page = 1; budget.left > 0; page++) {
     budget.left -= 1;
-    const list = await fetchActivityPage(user, { page, before });
+    const list = await fetchActivityPage(conn, { page, before });
     const keepGoing = await onPage(list);
     if (list.length < SYNC_PAGE_SIZE) return true;
     if (!keepGoing) return false;
@@ -223,7 +215,7 @@ async function walkPages(user, { before, budget, onPage }) {
 }
 
 async function sync(userId) {
-  const user = await getConnectedUser(userId);
+  const conn = await getConnection(userId);
   const budget = { left: SYNC_MAX_PAGES };
   const seen = new Map(); // id → actividad de Strava (sin repetir entre páginas)
   let notRides = 0;
@@ -233,12 +225,12 @@ async function sync(userId) {
     fresh.forEach((s) => seen.set(String(s.id), s));
     notRides += fresh.filter((s) => !RIDE_TYPES.includes(s.type)).length;
     const rideIds = fresh.filter((s) => RIDE_TYPES.includes(s.type)).map((s) => String(s.id));
-    const existing = await Activity.findExistingStravaIds(rideIds);
+    const existing = await Activity.findImportedIds(PROVIDER, rideIds);
     return { rideIds, existing };
   };
 
   // 1) Lo nuevo: desde la más reciente hasta una página cuyas salidas ya estén todas importadas
-  const reachedEnd = await walkPages(user, {
+  const reachedEnd = await walkPages(conn, {
     budget,
     onPage: async (list) => {
       const { rideIds, existing } = await collect(list);
@@ -249,35 +241,36 @@ async function sync(userId) {
   // 2) Lo antiguo que falte (primera sincronización larga): antes de la salida más antigua importada
   let complete = reachedEnd;
   if (!reachedEnd && budget.left > 0) {
-    const oldest = await Activity.oldestStravaDate(userId);
+    const oldest = await Activity.oldestImportDate(userId, PROVIDER);
     const before = oldest && Math.floor(oldest.getTime() / 1000);
-    complete = await walkPages(user, { before, budget, onPage: async (list) => (await collect(list), true) });
+    complete = await walkPages(conn, { before, budget, onPage: async (list) => (await collect(list), true) });
   }
 
   const rides = [...seen.values()].filter((s) => RIDE_TYPES.includes(s.type));
-  const existing = await Activity.findExistingStravaIds(rides.map((s) => String(s.id)));
+  const existing = await Activity.findImportedIds(PROVIDER, rides.map((s) => String(s.id)));
 
   const created = [];
   let invalid = 0;
+  let duplicates = 0;
   for (const ride of rides.filter((s) => !existing.has(String(s.id)))) {
     const data = mapStravaActivity(ride);
     if (!data) {
       invalid += 1;
       continue;
     }
-    try {
-      created.push(await Activity.create(userId, data));
-    } catch (err) {
-      if (err.code !== 'P2002') throw err; // ya importada por una sincronización simultánea
-    }
+    const saved = await saveExternalRide(userId, { provider: PROVIDER, externalId: String(ride.id) }, data);
+    if (saved?.created) created.push(saved.activity);
+    else if (saved) duplicates += 1;
   }
 
   const lastSyncAt = new Date();
-  await User.updateStrava(userId, { stravaLastSyncAt: lastSyncAt });
+  await Connection.update(userId, PROVIDER, { lastSyncAt });
 
   return {
     imported: created.length,
     alreadyImported: existing.size,
+    // Ya estaban en la app por otra vía (un .gpx, otro servicio): no se duplican
+    duplicates,
     skippedNotRides: notRides,
     skippedInvalid: invalid,
     // Queda historial por traer: otra sincronización seguirá donde lo ha dejado esta
@@ -288,10 +281,10 @@ async function sync(userId) {
 }
 
 // Descarga el track completo (streams) de una actividad de Strava y lo guarda
-async function importStreams(userId, activity) {
-  const user = await getConnectedUser(userId);
+async function importStreams(userId, activity, stravaId) {
+  const conn = await getConnection(userId);
   const keys = 'latlng,altitude,time,heartrate';
-  const streams = await stravaGet(user, `/activities/${activity.stravaId}/streams?keys=${keys}&key_by_type=true`);
+  const streams = await stravaGet(conn, `/activities/${stravaId}/streams?keys=${keys}&key_by_type=true`);
 
   const latlng = streams?.latlng?.data;
   if (!Array.isArray(latlng) || latlng.length < 2) return null;
@@ -314,22 +307,21 @@ async function importStreams(userId, activity) {
 }
 
 async function status(userId) {
-  const user = await User.findStravaById(userId);
-  if (!user) throw new HttpError(404, 'Usuario no encontrado');
+  const conn = await Connection.find(userId, PROVIDER);
   return {
     configured: isConfigured(),
-    connected: Boolean(user.stravaAthleteId && user.stravaRefreshToken),
-    athleteId: user.stravaAthleteId,
-    lastSyncAt: user.stravaLastSyncAt,
+    connected: Boolean(conn?.refreshToken),
+    athleteId: conn?.account ?? null,
+    lastSyncAt: conn?.lastSyncAt ?? null,
   };
 }
 
-// Revoca el acceso en Strava (si se puede) y borra los tokens; las actividades se conservan
+// Revoca el acceso en Strava (si se puede) y borra la conexión; las actividades se conservan
 async function disconnect(userId) {
-  const user = await User.findStravaById(userId);
-  if (user?.stravaAccessToken && isConfigured()) {
+  const conn = await Connection.find(userId, PROVIDER);
+  if (conn?.accessToken && isConfigured()) {
     try {
-      const token = await getAccessToken(user);
+      const token = await getAccessToken(conn);
       await fetch(`${STRAVA_OAUTH}/deauthorize`, {
         method: 'POST', headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(TIMEOUT_MS),
       });
@@ -337,7 +329,7 @@ async function disconnect(userId) {
       // Aunque Strava no responda, se desvincula localmente
     }
   }
-  await clearConnection(userId);
+  await Connection.remove(userId, PROVIDER);
 }
 
 module.exports = {

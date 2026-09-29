@@ -92,8 +92,17 @@ describe('POST /api/activities/upload-gpx', () => {
     const segments = [straightSegment({ n: 20, start: START })];
     let res = await upload(buildGpx({ segments }), 'ruta.gpx', { title: 'Mi título' });
     assert.equal(res.body.title, 'Mi título');
-    res = await upload(buildGpx({ name: null, segments }));
+    res = await upload(buildGpx({ name: null, segments: [straightSegment({ n: 20, start: new Date(START.getTime() + 3600e3) })] }));
     assert.equal(res.body.title, 'Salida del 2026-09-20');
+  });
+
+  it('el mismo recorrido subido dos veces (misma hora) → 409 y no se duplica', async () => {
+    const gpx = buildGpx({ name: 'Vuelta al pantano', segments: referenceRide() });
+    assert.equal((await upload(gpx)).status, 201);
+    const res = await upload(gpx, 'copia.gpx');
+    assert.equal(res.status, 409);
+    assert.match(res.body.error, /ya está registrada: «Vuelta al pantano»/);
+    assert.equal(await prisma.activity.count(), 1);
   });
 
   it('GET /:id/track devuelve los puntos para el mapa', async () => {

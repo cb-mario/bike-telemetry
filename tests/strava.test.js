@@ -32,16 +32,21 @@ describe('Strava', () => {
   // Vincula al usuario directamente en BD (como si ya hubiera pasado por OAuth)
   async function connect({ expiresInSec = 6 * 3600 } = {}) {
     const { encrypt } = require('../src/utils/crypto');
-    await prisma.user.update({
-      where: { id: userId },
+    await prisma.connection.create({
       data: {
-        stravaAthleteId: '777',
-        stravaAccessToken: encrypt('access-1'),
-        stravaRefreshToken: encrypt('refresh-1'),
-        stravaTokenExpiresAt: new Date(Date.now() + expiresInSec * 1000),
+        userId,
+        provider: 'strava',
+        account: '777',
+        accessToken: encrypt('access-1'),
+        refreshToken: encrypt('refresh-1'),
+        tokenExpiresAt: new Date(Date.now() + expiresInSec * 1000),
       },
     });
   }
+
+  const stravaConnection = () => prisma.connection.findUnique({ where: { userId_provider: { userId, provider: 'strava' } } });
+  // Actividad importada de la salida de Strava con ese id
+  const byStravaId = (externalId) => prisma.activity.findFirst({ where: { imports: { some: { provider: 'strava', externalId } } } });
 
   describe('GET /api/strava/auth-url', () => {
     it('genera la URL de autorización con scopes y state firmado', async () => {
@@ -87,11 +92,11 @@ describe('Strava', () => {
         client_id: '12345', client_secret: 'strava-secret', code: 'abc', grant_type: 'authorization_code',
       });
 
-      const user = await prisma.user.findUnique({ where: { id: userId } });
-      assert.equal(user.stravaAthleteId, '777');
-      assert.notEqual(user.stravaAccessToken, 'access-1'); // cifrado en BD
-      assert.equal(decrypt(user.stravaAccessToken), 'access-1');
-      assert.equal(decrypt(user.stravaRefreshToken), 'refresh-1');
+      const conn = await stravaConnection();
+      assert.equal(conn.account, '777');
+      assert.notEqual(conn.accessToken, 'access-1'); // cifrado en BD
+      assert.equal(decrypt(conn.accessToken), 'access-1');
+      assert.equal(decrypt(conn.refreshToken), 'refresh-1');
     });
 
     const redirects = [
@@ -114,7 +119,8 @@ describe('Strava', () => {
 
     it('una cuenta de Strava ya vinculada a otro usuario → ?strava=taken', async () => {
       await registerUser('otro@test.local');
-      await prisma.user.update({ where: { email: 'otro@test.local' }, data: { stravaAthleteId: '777' } });
+      const other = await prisma.user.findUnique({ where: { email: 'otro@test.local' } });
+      await prisma.connection.create({ data: { userId: other.id, provider: 'strava', account: '777' } });
       mockStrava({ 'POST /oauth/token': () => tokenResponse() });
       const res = await callback({ code: 'abc', scope: 'activity:read_all', state: stateFor(userId) });
       assert.equal(res.headers.location, `${FRONT}?strava=taken`);
@@ -148,10 +154,10 @@ describe('Strava', () => {
       const calls = mockStrava({
         '/api/v3/athlete/activities': () => [200, [
           stravaActivity(),
-          stravaActivity({ id: 1002, type: 'VirtualRide', sport_type: 'VirtualRide', name: 'Zwift', map: { summary_polyline: '' } }),
-          stravaActivity({ id: 1003, type: 'Run', sport_type: 'Run' }),
-          stravaActivity({ id: 1004, sport_type: 'GravelRide', has_heartrate: false }),
-          stravaActivity({ id: 1005, distance: 0, name: 'Rodillo sin distancia' }),
+          stravaActivity({ id: 1002, type: 'VirtualRide', sport_type: 'VirtualRide', name: 'Zwift', map: { summary_polyline: '' }, start_date: '2026-09-19T18:00:00Z' }),
+          stravaActivity({ id: 1003, type: 'Run', sport_type: 'Run', start_date: '2026-09-18T18:00:00Z' }),
+          stravaActivity({ id: 1004, sport_type: 'GravelRide', has_heartrate: false, start_date: '2026-09-17T08:00:00Z' }),
+          stravaActivity({ id: 1005, distance: 0, name: 'Rodillo sin distancia', start_date: '2026-09-16T18:00:00Z' }),
         ]],
       });
 
@@ -164,7 +170,7 @@ describe('Strava', () => {
       assert.equal(res.body.hasMore, false);
       assert.equal(calls[0].headers.Authorization, 'Bearer access-1');
 
-      const ride = await prisma.activity.findUnique({ where: { stravaId: '1001' } });
+      const ride = await byStravaId('1001');
       assert.equal(ride.title, 'Morning Ride');
       assert.equal(ride.source, 'strava');
       assert.equal(ride.sportType, 'Ride');
@@ -177,7 +183,7 @@ describe('Strava', () => {
       assert.equal(ride.date.toISOString(), '2026-09-20T07:00:00.000Z');
       assert.equal(ride.summaryPolyline, '_p~iF~ps|U_ulLnnqC_mqNvxq`@');
 
-      const gravel = await prisma.activity.findUnique({ where: { stravaId: '1004' } });
+      const gravel = await byStravaId('1004');
       assert.equal(gravel.sportType, 'GravelRide');
       assert.equal(gravel.avgHr, null);
 
@@ -187,12 +193,46 @@ describe('Strava', () => {
 
     it('no duplica actividades al sincronizar de nuevo', async () => {
       await connect();
-      mockStrava({ '/api/v3/athlete/activities': () => [200, [stravaActivity(), stravaActivity({ id: 1002 })]] });
+      mockStrava({ '/api/v3/athlete/activities': () => [200, [stravaActivity(), stravaActivity({ id: 1002, start_date: '2026-09-21T07:00:00Z' })]] });
       await sync();
       const res = await sync();
       assert.equal(res.body.imported, 0);
       assert.equal(res.body.alreadyImported, 2);
       assert.equal(await prisma.activity.count(), 2);
+    });
+
+    it('una salida que ya estaba por otra vía (misma hora ±2 min) no se duplica: se enlaza', async () => {
+      await connect();
+      // La misma salida registrada antes a mano (p. ej. desde un .gpx), 1 minuto de diferencia
+      const existing = await prisma.activity.create({
+        data: { userId, title: 'Del GPX', date: new Date('2026-09-20T07:01:00Z'), distanceKm: 42, durationMin: 90, source: 'gpx' },
+      });
+      mockStrava({ '/api/v3/athlete/activities': () => [200, [stravaActivity(), stravaActivity({ id: 1002, start_date: '2026-09-20T07:05:00Z' })]] });
+
+      const res = await sync();
+      assert.equal(res.body.imported, 1); // la de las 7:05 sí es otra salida
+      assert.equal(res.body.duplicates, 1);
+      assert.equal(await prisma.activity.count(), 2);
+      assert.equal((await byStravaId('1001')).id, existing.id);
+      assert.equal((await byStravaId('1001')).title, 'Del GPX'); // se conservan los datos que había
+
+      // La siguiente sincronización ya la da por importada
+      const again = await sync();
+      assert.equal(again.body.duplicates, 0);
+      assert.equal(again.body.alreadyImported, 2);
+    });
+
+    it('la salida de otro usuario a la misma hora no cuenta como duplicada', async () => {
+      await registerUser('otro@test.local');
+      const other = await prisma.user.findUnique({ where: { email: 'otro@test.local' } });
+      await prisma.activity.create({
+        data: { userId: other.id, title: 'Ajena', date: new Date('2026-09-20T07:00:00Z'), distanceKm: 42, durationMin: 90 },
+      });
+      await connect();
+      mockStrava({ '/api/v3/athlete/activities': () => [200, [stravaActivity()]] });
+      const res = await sync();
+      assert.equal(res.body.imported, 1);
+      assert.equal(res.body.duplicates, 0);
     });
 
     it('renueva el token si ha caducado antes de llamar a la API', async () => {
@@ -206,8 +246,7 @@ describe('Strava', () => {
         client_id: '12345', client_secret: 'strava-secret', grant_type: 'refresh_token', refresh_token: 'refresh-1',
       });
       assert.equal(calls[1].headers.Authorization, 'Bearer access-2');
-      const user = await prisma.user.findUnique({ where: { id: userId } });
-      assert.equal(decrypt(user.stravaRefreshToken), 'refresh-2');
+      assert.equal(decrypt((await stravaConnection()).refreshToken), 'refresh-2');
     });
 
     it('limpia valores de pulso imposibles en lugar de descartar la salida', async () => {
@@ -224,9 +263,7 @@ describe('Strava', () => {
       mockStrava({ '/api/v3/athlete/activities': () => [401, { message: 'Authorization Error' }] });
       const res = await sync();
       assert.equal(res.status, 409);
-      const user = await prisma.user.findUnique({ where: { id: userId } });
-      assert.equal(user.stravaAthleteId, null);
-      assert.equal(user.stravaAccessToken, null);
+      assert.equal(await stravaConnection(), null);
     });
 
     it('límite de peticiones de Strava → 429', async () => {

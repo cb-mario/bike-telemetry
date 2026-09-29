@@ -27,17 +27,34 @@ model User {
   createdAt    DateTime  @default(now())
 
   // "Continuar con Google": identificador estable de la cuenta de Google (claim sub del ID token)
-  googleId     String?   @unique
+  googleId String? @unique
 
-  // Conexión con Strava (tokens cifrados con AES-256-GCM, ver src/utils/crypto.js)
-  stravaAthleteId      String?        @unique
-  stravaAccessToken    String?
-  stravaRefreshToken   String?
-  stravaTokenExpiresAt DateTime?
-  stravaLastSyncAt     DateTime?
-  activities           Activity[]
-  plannedRoutes        PlannedRoute[]
-  avatar               UserAvatar?
+  connections   Connection[]
+  activities    Activity[]
+  plannedRoutes PlannedRoute[]
+  avatar        UserAvatar?
+}
+
+// Servicio externo del que llegan salidas (Strava, iGPSPORT...). Una por usuario y servicio;
+// desconectar borra la fila y las salidas importadas se conservan
+model Connection {
+  id             Int       @id @default(autoincrement())
+  userId         Int
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider       String // "strava" | "igpsport"
+  // Cuenta en el servicio (id de atleta de Strava, email de iGPSPORT...)
+  account        String?
+  // Tokens cifrados con AES-256-GCM (ver src/utils/crypto.js)
+  accessToken    String?
+  refreshToken   String?
+  tokenExpiresAt DateTime?
+  lastSyncAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([userId, provider])
+  // Una cuenta de un servicio solo puede estar conectada a un usuario
+  @@unique([provider, account])
 }
 
 // Foto de perfil (1:1), aparte para no cargarla con el usuario. Se sirve en /api/avatars/:id:
@@ -52,9 +69,9 @@ model UserAvatar {
 }
 
 model Activity {
-  id              Int            @id @default(autoincrement())
+  id              Int              @id @default(autoincrement())
   userId          Int
-  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   title           String
   date            DateTime
   distanceKm      Float
@@ -63,15 +80,30 @@ model Activity {
   maxHr           Int? // bpm (opcional)
   elevationGain   Int? // metros de desnivel positivo (opcional)
   notes           String?
-  source          String         @default("manual") // "manual" | "gpx" | "strava"
+  // De dónde salen los datos: "manual" | "gpx" | "strava"
+  source          String           @default("manual")
   sportType       String? // Ride, GravelRide, MountainBikeRide, VirtualRide, EBikeRide...
   maxSpeedKmh     Float?
-  stravaId        String?        @unique
   summaryPolyline String? // Polilínea codificada (formato Google/Strava) para mapas y miniaturas
-  createdAt       DateTime       @default(now())
+  createdAt       DateTime         @default(now())
   track           ActivityTrack?
+  imports         ActivityImport[]
 
   @@index([userId, date])
+}
+
+// Salida de un servicio externo que corresponde a esta actividad. Una actividad puede tener varias
+// (la misma salida en Strava y en iGPSPORT): así cada sincronización sabe qué no volver a traer
+model ActivityImport {
+  id         Int      @id @default(autoincrement())
+  activityId Int
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  provider   String // "strava" | "igpsport"
+  externalId String // id de la salida en ese servicio
+  createdAt  DateTime @default(now())
+
+  @@unique([provider, externalId])
+  @@index([activityId])
 }
 
 // Track GPS de una actividad importada (1:1). Se guarda aparte para no cargarlo al listar

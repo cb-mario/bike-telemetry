@@ -5,6 +5,7 @@ const { parseActivity } = require('../utils/activityValidation');
 const { simplifyCoords, MAX_PREVIEW_POINTS } = require('./track.service');
 const { analyzeGpx } = require('./gpx.service');
 const stravaService = require('./strava.service');
+const { findSameRide } = require('./import.service');
 
 const MAX_MAP_POINTS = 200;
 
@@ -83,6 +84,10 @@ async function importGpx(userId, buffer, title) {
   }
 
   assertHeartRateCoherent(data);
+  const same = await findSameRide(userId, data.date);
+  if (same) {
+    throw new HttpError(409, `Esta salida ya está registrada: «${same.title}»`);
+  }
   return toPublic(await Activity.createWithTrack(userId, { ...data, summaryPolyline }, track));
 }
 
@@ -105,8 +110,9 @@ async function getTrack(id, userId) {
   const activity = await getOwnedOrFail(id, userId);
   let track = await Activity.findTrack(id);
   // Actividades de Strava: el track completo se descarga la primera vez que se pide
-  if (!track && activity.source === 'strava' && activity.stravaId) {
-    track = await stravaService.importStreams(userId, activity);
+  if (!track && activity.source === 'strava') {
+    const stravaId = await Activity.findExternalId(id, 'strava');
+    if (stravaId) track = await stravaService.importStreams(userId, activity, stravaId);
   }
   if (!track) throw new HttpError(404, 'Esta actividad no tiene track GPS');
 

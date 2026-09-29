@@ -56,28 +56,9 @@ function findAvatar(id) {
   return prisma.userAvatar.findUnique({ where: { id }, select: { data: true, contentType: true } });
 }
 
-// --- Strava ---
-
-const stravaFields = {
-  id: true, stravaAthleteId: true, stravaAccessToken: true, stravaRefreshToken: true,
-  stravaTokenExpiresAt: true, stravaLastSyncAt: true,
-};
-
-function findStravaById(id) {
-  return prisma.user.findUnique({ where: { id }, select: stravaFields });
-}
-
-function findByStravaAthleteId(stravaAthleteId) {
-  return prisma.user.findUnique({ where: { stravaAthleteId }, select: { id: true } });
-}
-
 // Formas de entrar de la cuenta (solo para decidir si se puede quitar una; nunca se expone)
 function findLoginMethods(id) {
   return prisma.user.findUnique({ where: { id }, select: { passwordHash: true, googleId: true } });
-}
-
-function updateStrava(id, data) {
-  return prisma.user.update({ where: { id }, data, select: stravaFields });
 }
 
 // --- Google ---
@@ -96,6 +77,6 @@ function createFromGoogle(data) {
 }
 
 module.exports = {
-  findByEmail, findPublicById, replaceAvatar, deleteAvatar, findAvatar, findCredentialsById, updatePassword, create, updateProfile, findStravaById, findByStravaAthleteId, updateStrava,
+  findByEmail, findPublicById, replaceAvatar, deleteAvatar, findAvatar, findCredentialsById, updatePassword, create, updateProfile,
   findLoginMethods, findByGoogleId, setGoogleId, createFromGoogle,
 };

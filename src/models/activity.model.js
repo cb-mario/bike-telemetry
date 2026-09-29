@@ -62,16 +62,53 @@ function createWithTrack(userId, data, track) {
   });
 }
 
-// Ids de Strava ya importados de entre los indicados
-async function findExistingStravaIds(stravaIds) {
-  const rows = await prisma.activity.findMany({ where: { stravaId: { in: stravaIds } }, select: { stravaId: true } });
-  return new Set(rows.map((r) => r.stravaId));
+// --- Salidas de servicios externos (ActivityImport) ---
+
+// Crea la actividad y la anota como importada de ese servicio, en una sola operación
+function createImported(userId, data, { provider, externalId }) {
+  return prisma.activity.create({
+    data: { ...data, userId, imports: { create: { provider, externalId } } },
+    include: withPreview,
+  });
 }
 
-// Fecha de la salida de Strava más antigua importada por el usuario (null si no hay)
-async function oldestStravaDate(userId) {
-  const result = await prisma.activity.aggregate({ where: { userId, source: 'strava' }, _min: { date: true } });
+// Anota una actividad que ya existía como la misma salida de ese servicio
+function addImport(activityId, { provider, externalId }) {
+  return prisma.activityImport.create({ data: { activityId, provider, externalId } });
+}
+
+// Ids del servicio ya importados de entre los indicados
+async function findImportedIds(provider, externalIds) {
+  const rows = await prisma.activityImport.findMany({
+    where: { provider, externalId: { in: externalIds } },
+    select: { externalId: true },
+  });
+  return new Set(rows.map((r) => r.externalId));
+}
+
+// Id de la actividad en ese servicio (null si no llegó de él)
+async function findExternalId(activityId, provider) {
+  const row = await prisma.activityImport.findFirst({ where: { activityId, provider }, select: { externalId: true } });
+  return row?.externalId ?? null;
+}
+
+// Fecha de la salida más antigua importada de ese servicio (null si no hay)
+async function oldestImportDate(userId, provider) {
+  const result = await prisma.activity.aggregate({
+    where: { userId, imports: { some: { provider } } },
+    _min: { date: true },
+  });
   return result._min.date;
+}
+
+// Actividad del usuario que empieza entre `from` y `to` (la más cercana a `date`)
+async function findStartingBetween(userId, date, { from, to }) {
+  const rows = await prisma.activity.findMany({
+    where: { userId, date: { gte: from, lte: to } },
+    select: { id: true, title: true, date: true },
+  });
+  const distance = (a) => Math.abs(a.date.getTime() - date.getTime());
+  return rows.sort((a, b) => distance(a) - distance(b))[0] ?? null;
 }
 
 function createTrack(activityId, track) {
@@ -110,5 +147,6 @@ async function maxRecordedHr(userId) {
 
 module.exports = {
   findForStats, maxRecordedHr, findManyByUser, countByUser, findRoutes, findByIdForUser,
-  create, createWithTrack, findTrack, createTrack, findExistingStravaIds, oldestStravaDate, update, remove,
+  create, createWithTrack, findTrack, createTrack, update, remove,
+  createImported, addImport, findImportedIds, findExternalId, oldestImportDate, findStartingBetween,
 };

@@ -35,9 +35,13 @@ export function StravaControls() {
     try {
       const result = await syncStrava()
       const n = result.imported
+      const d = result.duplicates
       const imported = n ? `${n === 1 ? '1 salida nueva importada' : `${n} salidas nuevas importadas`} desde Strava.` : 'Todo al día: no hay salidas nuevas en Strava.'
+      // Salidas que ya estaban por otra vía (un GPX, otro servicio): se enlazan, no se duplican
+      const linked = d ? ` ${d === 1 ? '1 ya estaba registrada' : `${d} ya estaban registradas`} y no se ha duplicado.` : ''
       // Historial largo: cada sincronización trae una parte para no agotar el límite de Strava
-      toast(result.hasMore ? `${imported} Quedan salidas antiguas: vuelve a sincronizar para seguir.` : imported, 'success')
+      const more = result.hasMore ? ' Quedan salidas antiguas: vuelve a sincronizar para seguir.' : ''
+      toast(`${imported}${linked}${more}`, 'success')
       setStatus((s) => ({ ...s, lastSyncAt: result.lastSyncAt }))
       if (n) refresh()
     } catch (err) {
